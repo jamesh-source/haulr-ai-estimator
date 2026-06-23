@@ -1,0 +1,71 @@
+# =============================================================================
+# HAULR AI ESTIMATOR — .gitignore
+# =============================================================================
+
+# ---- Dependencies ----
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# ---- Next.js ----
+.next/
+out/
+build/
+dist/
+
+# ---- Environment variables — NEVER commit these ----
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+
+# ---- Supabase ----
+supabase/.temp/
+supabase/.branches/
+# Keep supabase/migrations and supabase/config.toml tracked
+
+# ---- TypeScript ----
+*.tsbuildinfo
+next-env.d.ts
+
+# ---- Testing ----
+coverage/
+.nyc_output/
+
+# ---- Debug / Logs ----
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ---- OS & Editor ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ---- Vercel ----
+.vercel
+
+# ---- PWA / Service Worker (generated) ----
+public/sw.js
+public/sw.js.map
+public/workbox-*.js
+public/workbox-*.js.map
+public/worker-*.js
+public/worker-*.js.map
+public/fallback-*.js
+public/fallback-*.js.map
+
+# ---- Misc ----
+*.pem
+.turbo/
+.cache/
+tmp/
+temp/
