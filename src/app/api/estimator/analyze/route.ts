@@ -81,9 +81,26 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         // Skip video files for OpenAI vision (not supported)
         if (isVideo) continue;
 
-        // Convert to base64
+        // Convert to base64 — resize large images to reduce payload size
         const arrayBuffer = await file.arrayBuffer();
-        const base64 = Buffer.from(arrayBuffer).toString('base64');
+        const buffer = Buffer.from(arrayBuffer);
+        let finalBuffer = buffer;
+
+        // If file is over 1.5MB, use sharp to resize it (keeps quality good for AI vision)
+        if (buffer.byteLength > 1.5 * 1024 * 1024) {
+          try {
+            const sharp = (await import('sharp')).default;
+            finalBuffer = await sharp(buffer)
+              .resize(1500, 1500, { fit: 'inside', withoutEnlargement: true })
+              .jpeg({ quality: 85 })
+              .toBuffer();
+          } catch {
+            // If sharp fails, use original
+            finalBuffer = buffer;
+          }
+        }
+
+        const base64 = finalBuffer.toString('base64');
         const mimeType = file.type.includes('heic') ? 'image/jpeg' : file.type || 'image/jpeg';
 
         imageMessages.push({
