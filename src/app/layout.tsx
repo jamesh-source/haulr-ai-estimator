@@ -22,10 +22,10 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
   icons: {
     icon: [
-      { url: '/logo.png', type: 'image/png' },
+      { url: '/haulr-favicon1.png', type: 'image/png' },
     ],
-    apple: '/logo.png',
-    shortcut: '/logo.png',
+    apple: '/haulr-favicon1.png',
+    shortcut: '/haulr-favicon1.png',
   },
   openGraph: {
     type: 'website',
