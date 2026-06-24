@@ -102,9 +102,52 @@ export function PricingConfig() {
 
   const handleSave = async () => {
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setSaving(false);
-    toast.success('Pricing settings saved');
+    try {
+      // Transform component format to API format
+      const load_prices: Record<string, number> = {};
+      pricing.loadSizes.forEach((ls) => {
+        load_prices[ls.fraction] = ls.minPrice;
+      });
+
+      const apiPayload = {
+        pricing: {
+          load_prices,
+          distance_brackets: pricing.distanceBrackets.map((b) => ({
+            min_miles: b.minMiles,
+            max_miles: b.maxMiles ?? 9999,
+            charge: b.surcharge,
+          })),
+          labor_rate: pricing.laborRatePerHour,
+          stair_fees: {
+            per_flight: pricing.stairFeePerFlight,
+            max_flights: 5,
+          },
+          heavy_item_prices: {},
+          difficulty_multipliers: {
+            easy: 1.0,
+            moderate: 1.15,
+            hard: 1.3,
+            extreme: 1.5,
+          },
+          specialty_fees: {},
+          dump_base_fee: pricing.dumpFeeBase,
+          dump_per_yard: pricing.dumpFeePerYard,
+        },
+        tax_rate: pricing.taxRate / 100,
+      };
+
+      const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(apiPayload),
+      });
+      if (!res.ok) throw new Error('Failed to save');
+      toast.success('Pricing settings saved');
+    } catch {
+      toast.error('Failed to save settings. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   // Sample quote preview
