@@ -162,16 +162,14 @@ export async function PUT(request: NextRequest) {
 
     const { data: updated, error } = await supabase
       .from('business_settings')
-      .update(updatePayload)
-      .eq('clerk_user_id', userId)
+      .upsert(
+        { clerk_user_id: userId, ...updatePayload },
+        { onConflict: 'clerk_user_id' }
+      )
       .select()
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        // Settings row doesn't exist — create it
-        return POST(request);
-      }
       console.error('[settings PUT]', error.message);
       return NextResponse.json({ error: { message: error.message } }, { status: 500 });
     }

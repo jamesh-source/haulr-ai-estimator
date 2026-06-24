@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Building2,
   DollarSign,
@@ -92,14 +92,36 @@ const DEFAULT_SPECIALTY_FEES: SpecialtyFee[] = [
 // ─── Company Tab ─────────────────────────────────────────────────────────────────
 
 function CompanyTab() {
-  const [companyName, setCompanyName] = useState('HAULR Junk Removal');
-  const [address, setAddress] = useState('123 Main St, Anytown, TX 75001');
-  const [phone, setPhone] = useState('(555) 123-4567');
-  const [email, setEmail] = useState('hello@haulr.com');
-  const [website, setWebsite] = useState('https://haulr.com');
+  const [companyName, setCompanyName] = useState('');
+  const [address, setAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [zip, setZip] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [website, setWebsite] = useState('');
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((r) => r.json())
+      .then(({ data }) => {
+        if (data) {
+          setCompanyName(data.company_name ?? '');
+          setAddress(data.address ?? '');
+          setCity(data.city ?? '');
+          setState(data.state ?? '');
+          setZip(data.zip ?? '');
+          setPhone(data.phone ?? '');
+          setEmail(data.email ?? '');
+          setWebsite(data.website ?? '');
+          if (data.logo_url) setLogoPreview(data.logo_url);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -112,9 +134,19 @@ function CompanyTab() {
 
   const handleSave = async () => {
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 700));
-    setSaving(false);
-    toast.success('Company info saved');
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company_name: companyName, address, city, state, zip, phone, email, website }),
+      });
+      if (!res.ok) throw new Error('Failed to save');
+      toast.success('Company info saved');
+    } catch {
+      toast.error('Failed to save. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -176,14 +208,48 @@ function CompanyTab() {
           </div>
         </div>
         <div>
-          <label className="text-gray-500 text-xs font-medium block mb-1.5 uppercase tracking-wider">Business Address</label>
+          <label className="text-gray-500 text-xs font-medium block mb-1.5 uppercase tracking-wider">Street Address</label>
           <div className="relative">
             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
             <input
               type="text"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
+              placeholder="123 Main St"
               className="w-full bg-gray-800 border border-gray-700 rounded-xl pl-10 pr-4 py-3 text-gray-200 text-sm focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/30"
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <label className="text-gray-500 text-xs font-medium block mb-1.5 uppercase tracking-wider">City</label>
+            <input
+              type="text"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="Dallas"
+              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-gray-200 text-sm focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/30"
+            />
+          </div>
+          <div>
+            <label className="text-gray-500 text-xs font-medium block mb-1.5 uppercase tracking-wider">State</label>
+            <input
+              type="text"
+              value={state}
+              onChange={(e) => setState(e.target.value)}
+              placeholder="TX"
+              maxLength={2}
+              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-gray-200 text-sm focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/30"
+            />
+          </div>
+          <div>
+            <label className="text-gray-500 text-xs font-medium block mb-1.5 uppercase tracking-wider">ZIP</label>
+            <input
+              type="text"
+              value={zip}
+              onChange={(e) => setZip(e.target.value)}
+              placeholder="75001"
+              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-gray-200 text-sm focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/30"
             />
           </div>
         </div>
@@ -252,17 +318,16 @@ function HeavyItemsTab() {
   const [editValues, setEditValues] = useState<Partial<HeavyItem>>({});
   const [addingNew, setAddingNew] = useState(false);
   const [newItem, setNewItem] = useState({ name: '', defaultPrice: 0, weight: '' });
+  const [saving, setSaving] = useState(false);
 
   const saveEdit = (id: string) => {
     setItems(items.map((item) => (item.id === id ? { ...item, ...editValues } : item)));
     setEditingId(null);
     setEditValues({});
-    toast.success('Item updated');
   };
 
   const deleteItem = (id: string) => {
     setItems(items.filter((item) => item.id !== id));
-    toast.success('Item removed');
   };
 
   const addItem = () => {
@@ -270,7 +335,25 @@ function HeavyItemsTab() {
     setItems([...items, { ...newItem, id: Date.now().toString() }]);
     setNewItem({ name: '', defaultPrice: 0, weight: '' });
     setAddingNew(false);
-    toast.success('Item added');
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const heavy_item_prices: Record<string, number> = {};
+      items.forEach((item) => { heavy_item_prices[item.name] = item.defaultPrice; });
+      const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pricing: { heavy_item_prices, load_prices: {}, distance_brackets: [{ min_miles: 0, max_miles: 9999, charge: 0 }], labor_rate: 45, stair_fees: { per_flight: 25, max_flights: 5 }, difficulty_multipliers: { easy: 1.0, moderate: 1.15, hard: 1.3, extreme: 1.5 }, specialty_fees: {}, dump_base_fee: 26.5, dump_per_yard: 11 } }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      toast.success('Heavy items saved');
+    } catch {
+      toast.error('Failed to save. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -408,6 +491,16 @@ function HeavyItemsTab() {
           </tbody>
         </table>
       </div>
+
+      <div className="flex justify-end pt-4 border-t border-gray-800">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex items-center gap-2 bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white font-medium px-6 py-2.5 rounded-xl transition-colors"
+        >
+          {saving ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving...</> : <><Save className="w-4 h-4" />Save Heavy Items</>}
+        </button>
+      </div>
     </div>
   );
 }
@@ -420,19 +513,37 @@ function SpecialtyFeesTab() {
   const [editValues, setEditValues] = useState<Partial<SpecialtyFee>>({});
   const [addingNew, setAddingNew] = useState(false);
   const [newFee, setNewFee] = useState({ name: '', price: 0, unit: 'flat fee', description: '' });
+  const [saving, setSaving] = useState(false);
 
   const saveFee = () => {
     if (!newFee.name.trim()) { toast.error('Fee name required'); return; }
     setFees([...fees, { ...newFee, id: Date.now().toString() }]);
     setNewFee({ name: '', price: 0, unit: 'flat fee', description: '' });
     setAddingNew(false);
-    toast.success('Fee added');
   };
 
   const saveEdit = (id: string) => {
     setFees(fees.map((f) => (f.id === id ? { ...f, ...editValues } : f)));
     setEditingId(null);
-    toast.success('Fee updated');
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const specialty_fees: Record<string, number> = {};
+      fees.forEach((f) => { specialty_fees[f.name] = f.price; });
+      const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pricing: { specialty_fees, load_prices: {}, distance_brackets: [{ min_miles: 0, max_miles: 9999, charge: 0 }], labor_rate: 45, stair_fees: { per_flight: 25, max_flights: 5 }, heavy_item_prices: {}, difficulty_multipliers: { easy: 1.0, moderate: 1.15, hard: 1.3, extreme: 1.5 }, dump_base_fee: 26.5, dump_per_yard: 11 } }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      toast.success('Specialty fees saved');
+    } catch {
+      toast.error('Failed to save. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const UNIT_OPTIONS = ['flat fee', 'per item', 'per unit', 'per cu yd', 'per tire', 'per bag'];
@@ -579,6 +690,16 @@ function SpecialtyFeesTab() {
           </div>
         ))}
       </div>
+
+      <div className="flex justify-end pt-4 border-t border-gray-800">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex items-center gap-2 bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white font-medium px-6 py-2.5 rounded-xl transition-colors"
+        >
+          {saving ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving...</> : <><Save className="w-4 h-4" />Save Specialty Fees</>}
+        </button>
+      </div>
     </div>
   );
 }
@@ -640,9 +761,19 @@ function NotificationsTab() {
 
   const handleSave = async () => {
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setSaving(false);
-    toast.success('Notification settings saved');
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: smsNumber, email: notifEmail }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      toast.success('Notification settings saved');
+    } catch {
+      toast.error('Failed to save. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const CHANNEL_COLORS: Record<string, string> = {
