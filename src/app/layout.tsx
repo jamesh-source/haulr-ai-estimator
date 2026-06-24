@@ -21,8 +21,11 @@ export const metadata: Metadata = {
   authors: [{ name: 'HAULR' }],
   robots: { index: false, follow: false },
   icons: {
-    icon: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
+    icon: [
+      { url: '/logo.png', type: 'image/png' },
+    ],
+    apple: '/logo.png',
+    shortcut: '/logo.png',
   },
   openGraph: {
     type: 'website',
