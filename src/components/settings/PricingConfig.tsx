@@ -31,14 +31,14 @@ interface PricingData {
 
 const DEFAULT_PRICING: PricingData = {
   loadSizes: [
-    { label: '1/8 Load', fraction: '1/8', pct: 13, minPrice: 75, maxPrice: 125 },
-    { label: '1/4 Load', fraction: '1/4', pct: 25, minPrice: 125, maxPrice: 175 },
-    { label: '3/8 Load', fraction: '3/8', pct: 38, minPrice: 175, maxPrice: 225 },
-    { label: '1/2 Load', fraction: '1/2', pct: 50, minPrice: 225, maxPrice: 300 },
-    { label: '5/8 Load', fraction: '5/8', pct: 63, minPrice: 300, maxPrice: 375 },
-    { label: '3/4 Load', fraction: '3/4', pct: 75, minPrice: 375, maxPrice: 450 },
-    { label: '7/8 Load', fraction: '7/8', pct: 88, minPrice: 450, maxPrice: 525 },
-    { label: 'Full Load', fraction: '1', pct: 100, minPrice: 525, maxPrice: 650 },
+    { label: '1/8 Load', fraction: '1/8', pct: 13, minPrice: 100, maxPrice: 150 },
+    { label: '1/4 Load', fraction: '1/4', pct: 25, minPrice: 150, maxPrice: 225 },
+    { label: '3/8 Load', fraction: '3/8', pct: 38, minPrice: 225, maxPrice: 300 },
+    { label: '1/2 Load', fraction: '1/2', pct: 50, minPrice: 300, maxPrice: 400 },
+    { label: '5/8 Load', fraction: '5/8', pct: 63, minPrice: 400, maxPrice: 500 },
+    { label: '3/4 Load', fraction: '3/4', pct: 75, minPrice: 500, maxPrice: 625 },
+    { label: '7/8 Load', fraction: '7/8', pct: 88, minPrice: 625, maxPrice: 750 },
+    { label: 'Full Load', fraction: '1', pct: 100, minPrice: 700, maxPrice: 900 },
   ],
   distanceBrackets: [
     { id: '1', minMiles: 0, maxMiles: 10, surcharge: 0 },
@@ -48,9 +48,9 @@ const DEFAULT_PRICING: PricingData = {
   ],
   laborRatePerHour: 45,
   stairFeePerFlight: 25,
-  dumpFeeBase: 50,
-  dumpFeePerYard: 12,
-  taxRate: 8.5,
+  dumpFeeBase: 26.50,
+  dumpFeePerYard: 11,
+  taxRate: 8.35,
 };
 
 export function PricingConfig() {
