@@ -83,17 +83,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
         // Convert to base64 — resize large images to reduce payload size
         const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        let finalBuffer = buffer;
+        const buffer = Buffer.from(new Uint8Array(arrayBuffer));
+        let finalBuffer: Buffer = buffer;
 
         // If file is over 1.5MB, use sharp to resize it (keeps quality good for AI vision)
         if (buffer.byteLength > 1.5 * 1024 * 1024) {
           try {
             const sharp = (await import('sharp')).default;
-            finalBuffer = await sharp(buffer)
+            const resized = await sharp(buffer)
               .resize(1500, 1500, { fit: 'inside', withoutEnlargement: true })
               .jpeg({ quality: 85 })
               .toBuffer();
+            finalBuffer = Buffer.from(new Uint8Array(resized));
           } catch {
             // If sharp fails, use original
             finalBuffer = buffer;
