@@ -176,10 +176,13 @@ export function PricingConfig() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(apiPayload),
       });
-      if (!res.ok) throw new Error('Failed to save');
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error?.message ?? JSON.stringify(json));
       toast.success('Pricing settings saved');
-    } catch {
-      toast.error('Failed to save settings. Please try again.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      console.error('[PricingConfig save]', msg);
+      toast.error(`Save failed: ${msg}`);
     } finally {
       setSaving(false);
     }

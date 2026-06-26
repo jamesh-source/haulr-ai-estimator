@@ -257,7 +257,7 @@ export function CrewManager() {
       const res = await fetch(`/api/crew/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_active: !member.active }),
+        body: JSON.stringify({ status: !member.active ? 'active' : 'inactive' }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error?.message ?? 'Failed to update crew member');
