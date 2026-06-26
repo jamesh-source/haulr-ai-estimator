@@ -50,7 +50,20 @@ const BusinessSettingsSchema = z.object({
   pricing: PricingConfigSchema.optional(),
 });
 
-const UpdateSettingsSchema = BusinessSettingsSchema.partial();
+const UpdateSettingsSchema = z.object({
+  company_name: z.string().max(200).optional(),
+  address: z.string().max(300).optional(),
+  city: z.string().max(100).optional(),
+  state: z.string().max(50).optional(),
+  zip: z.string().max(10).optional(),
+  phone: z.string().max(20).optional(),
+  email: z.string().email().optional().or(z.literal('')),
+  website: z.string().url().optional().or(z.literal('')),
+  logo_url: z.string().url().optional().or(z.literal('')),
+  tax_rate: z.number().min(0).max(0.25).optional(),
+  base_price: z.number().nonnegative().optional(),
+  pricing: PricingConfigSchema.optional(),
+});
 
 // -----------------------------------------------------------------------------
 // GET /api/settings

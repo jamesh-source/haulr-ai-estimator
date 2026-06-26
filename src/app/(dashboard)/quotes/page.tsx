@@ -277,7 +277,7 @@ export default function QuotesPage() {
       </div>
 
       {/* Stats Bar */}
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         <StatCard
           label="Total Quotes"
           value={stats.total}
@@ -346,33 +346,35 @@ export default function QuotesPage() {
       </Card>
 
       {/* Status Tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
-        {STATUS_TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setStatusFilter(tab.id)}
-            className={cn(
-              'flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium transition-all',
-              statusFilter === tab.id
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            )}
-          >
-            {tab.label}
-            {statusCounts[tab.id] !== undefined && (
-              <span
-                className={cn(
-                  'text-xs px-1.5 py-0.5 rounded-full font-medium',
-                  statusFilter === tab.id
-                    ? 'bg-orange-100 text-orange-700'
-                    : 'bg-gray-200 text-gray-500'
-                )}
-              >
-                {statusCounts[tab.id]}
-              </span>
-            )}
-          </button>
-        ))}
+      <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-max sm:w-fit min-w-full sm:min-w-0">
+          {STATUS_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setStatusFilter(tab.id)}
+              className={cn(
+                'flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex-shrink-0',
+                statusFilter === tab.id
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              )}
+            >
+              {tab.label}
+              {statusCounts[tab.id] !== undefined && (
+                <span
+                  className={cn(
+                    'text-xs px-1.5 py-0.5 rounded-full font-medium',
+                    statusFilter === tab.id
+                      ? 'bg-orange-100 text-orange-700'
+                      : 'bg-gray-200 text-gray-500'
+                  )}
+                >
+                  {statusCounts[tab.id]}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Data Table */}

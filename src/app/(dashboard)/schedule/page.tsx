@@ -261,15 +261,25 @@ export default function SchedulePage() {
           <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
         </div>
       ) : (
-        <div className="flex gap-5 items-start">
-          {/* Unscheduled sidebar */}
-          <div className="w-72 flex-shrink-0 space-y-3">
+        <div className="flex flex-col lg:flex-row gap-5 items-start">
+          {/* Calendar — full width on mobile, flex-1 on desktop */}
+          <div className="w-full flex-1 min-w-0">
+            <ScheduleCalendar
+              jobs={jobs}
+              onSelectEvent={setSelectedEvent}
+              onSelectSlot={handleSelectSlot}
+              onEventDrop={handleEventDrop}
+            />
+          </div>
+
+          {/* Unscheduled sidebar — below calendar on mobile, left on desktop */}
+          <div className="w-full lg:w-72 lg:flex-shrink-0 space-y-3 order-last lg:order-none">
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
               <div className="px-4 pt-4 pb-2 border-b border-gray-50">
                 <h2 className="text-sm font-semibold text-gray-900">Unscheduled Jobs</h2>
-                <p className="text-xs text-gray-400 mt-0.5">Click arrow or drag to calendar</p>
+                <p className="text-xs text-gray-400 mt-0.5">Tap arrow to schedule</p>
               </div>
-              <div className="p-3 space-y-2 max-h-[calc(100vh-260px)] overflow-y-auto">
+              <div className="p-3 space-y-2 max-h-64 lg:max-h-[calc(100vh-260px)] overflow-y-auto">
                 {UNSCHEDULED_JOBS.length === 0 ? (
                   <div className="text-center py-6">
                     <Calendar className="h-6 w-6 text-gray-300 mx-auto mb-2" />
@@ -290,7 +300,7 @@ export default function SchedulePage() {
             {/* Status legend */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
               <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3">Status Legend</h3>
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 lg:grid-cols-1 gap-2">
                 {[
                   { label: 'Scheduled', color: '#3B82F6' },
                   { label: 'In Progress', color: '#F59E0B' },
@@ -305,16 +315,6 @@ export default function SchedulePage() {
                 ))}
               </div>
             </div>
-          </div>
-
-          {/* Calendar */}
-          <div className="flex-1 min-w-0">
-            <ScheduleCalendar
-              jobs={jobs}
-              onSelectEvent={setSelectedEvent}
-              onSelectSlot={handleSelectSlot}
-              onEventDrop={handleEventDrop}
-            />
           </div>
         </div>
       )}
