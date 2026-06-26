@@ -140,10 +140,13 @@ function CompanyTab() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ company_name: companyName, address, city, state, zip, phone, email, website }),
       });
-      if (!res.ok) throw new Error('Failed to save');
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error?.message ?? JSON.stringify(json));
       toast.success('Company info saved');
-    } catch {
-      toast.error('Failed to save. Please try again.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      console.error('[CompanyTab save]', msg);
+      toast.error(`Save failed: ${msg}`);
     } finally {
       setSaving(false);
     }
