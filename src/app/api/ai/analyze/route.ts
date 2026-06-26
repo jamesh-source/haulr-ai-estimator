@@ -29,7 +29,7 @@ const AnalyzeRequestSchema = z.object({
 // -----------------------------------------------------------------------------
 
 async function checkRateLimit(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: Awaited<ReturnType<typeof createAdminClient>>,
   userId: string
 ): Promise<{ allowed: boolean; remaining: number; resetAt: Date }> {
   const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
