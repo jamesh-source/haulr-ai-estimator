@@ -11,6 +11,8 @@ interface CrewMember {
   phone: string;
   email: string;
   ratePerHour: number;
+  payType: 'hourly' | 'percent';
+  payPercent: number;
   active: boolean;
 }
 
@@ -22,6 +24,8 @@ interface CrewRow {
   phone: string;
   email: string;
   hourly_rate: number;   // DB column name
+  pay_type: string;
+  pay_percent: number;
   status: string;        // DB column: 'active' | 'inactive'
   clerk_user_id?: string;
 }
@@ -34,6 +38,8 @@ function rowToMember(row: CrewRow): CrewMember {
     phone: row.phone ?? '',
     email: row.email ?? '',
     ratePerHour: row.hourly_rate ?? 0,
+    payType: (row.pay_type ?? 'hourly') as 'hourly' | 'percent',
+    payPercent: row.pay_percent ?? 0,
     active: row.status === 'active',
   };
 }
@@ -45,6 +51,8 @@ function memberToPayload(m: Omit<CrewMember, 'id'>) {
     phone: m.phone,
     email: m.email,
     hourly_rate: m.ratePerHour,
+    pay_type: m.payType,
+    pay_percent: m.payPercent,
     status: m.active ? 'active' : 'inactive',
   };
 }
@@ -69,6 +77,8 @@ const EMPTY_MEMBER: Omit<CrewMember, 'id'> = {
   phone: '',
   email: '',
   ratePerHour: 22,
+  payType: 'hourly',
+  payPercent: 20,
   active: true,
 };
 
@@ -124,17 +134,60 @@ function MemberForm({ form, onChange, onSave, onCancel }: {
             className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-200 text-sm focus:outline-none focus:border-orange-500"
           />
         </div>
-        <div>
-          <label className="text-gray-500 text-xs block mb-1.5">Hourly Rate</label>
-          <div className="relative">
-            <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
-            <input
-              type="number"
-              value={form.ratePerHour}
-              onChange={(e) => onChange({ ...form, ratePerHour: Number(e.target.value) })}
-              className="w-full bg-gray-900 border border-gray-700 rounded-lg pl-7 pr-8 py-2 text-gray-200 text-sm focus:outline-none focus:border-orange-500"
-            />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">/hr</span>
+        <div className="col-span-2">
+          <label className="text-gray-500 text-xs block mb-1.5">Pay Type</label>
+          <div className="flex items-center gap-3">
+            {/* Pill toggle */}
+            <div className="flex bg-gray-900 border border-gray-700 rounded-lg p-0.5">
+              <button
+                type="button"
+                onClick={() => onChange({ ...form, payType: 'hourly' })}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                  form.payType === 'hourly'
+                    ? 'bg-orange-600 text-white'
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                Hourly
+              </button>
+              <button
+                type="button"
+                onClick={() => onChange({ ...form, payType: 'percent' })}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                  form.payType === 'percent'
+                    ? 'bg-orange-600 text-white'
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                Percent
+              </button>
+            </div>
+
+            {/* Conditional input */}
+            {form.payType === 'hourly' ? (
+              <div className="relative flex-1">
+                <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+                <input
+                  type="number"
+                  value={form.ratePerHour}
+                  onChange={(e) => onChange({ ...form, ratePerHour: Number(e.target.value) })}
+                  className="w-full bg-gray-900 border border-gray-700 rounded-lg pl-7 pr-8 py-2 text-gray-200 text-sm focus:outline-none focus:border-orange-500"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">/hr</span>
+              </div>
+            ) : (
+              <div className="relative flex-1">
+                <input
+                  type="number"
+                  value={form.payPercent}
+                  min={0}
+                  max={100}
+                  onChange={(e) => onChange({ ...form, payPercent: Number(e.target.value) })}
+                  className="w-full bg-gray-900 border border-gray-700 rounded-lg pl-3 pr-8 py-2 text-gray-200 text-sm focus:outline-none focus:border-orange-500"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">%</span>
+              </div>
+            )}
           </div>
         </div>
         <div className="flex items-end">
@@ -197,7 +250,7 @@ export function CrewManager() {
 
   const startEdit = (member: CrewMember) => {
     setEditingId(member.id);
-    setEditForm({ name: member.name, role: member.role, phone: member.phone, email: member.email, ratePerHour: member.ratePerHour, active: member.active });
+    setEditForm({ name: member.name, role: member.role, phone: member.phone, email: member.email, ratePerHour: member.ratePerHour, payType: member.payType, payPercent: member.payPercent, active: member.active });
     setAddingNew(false);
   };
 
@@ -354,7 +407,11 @@ export function CrewManager() {
 
                 {/* Rate */}
                 <div className="text-right flex-shrink-0">
-                  <div className="text-emerald-400 font-semibold text-sm">${member.ratePerHour}/hr</div>
+                  <div className="text-emerald-400 font-semibold text-sm">
+                    {member.payType === 'percent'
+                      ? `${member.payPercent}%`
+                      : `$${member.ratePerHour}/hr`}
+                  </div>
                 </div>
 
                 {/* Actions */}
