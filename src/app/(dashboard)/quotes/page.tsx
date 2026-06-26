@@ -192,7 +192,7 @@ export default function QuotesPage() {
   useEffect(() => {
     fetch('/api/quotes')
       .then((r) => r.json())
-      .then(({ data }) => { setQuotes(data ?? []); })
+      .then(({ data }) => { setQuotes(data?.quotes ?? []); })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
