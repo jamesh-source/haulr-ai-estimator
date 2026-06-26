@@ -388,7 +388,8 @@ export async function GET(
       },
     });
   } catch (err) {
-    console.error('[quotes/pdf] Unhandled:', err);
-    return NextResponse.json({ error: { message: 'Failed to generate PDF' } }, { status: 500 });
+    const msg = err instanceof Error ? err.message : 'Failed to generate PDF';
+    console.error('[quotes/pdf] Unhandled:', msg);
+    return NextResponse.json({ error: { message: msg } }, { status: 500 });
   }
 }

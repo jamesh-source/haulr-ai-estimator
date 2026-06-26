@@ -97,8 +97,9 @@ export async function GET(request: NextRequest) {
       error: null,
     });
   } catch (err) {
-    console.error('[jobs GET] Unhandled:', err);
-    return NextResponse.json({ error: { message: 'Internal server error' } }, { status: 500 });
+    const msg = err instanceof Error ? err.message : 'Internal server error';
+    console.error('[jobs GET] Unhandled:', msg);
+    return NextResponse.json({ error: { message: msg } }, { status: 500 });
   }
 }
 
@@ -187,7 +188,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data: job, error: null }, { status: 201 });
   } catch (err) {
-    console.error('[jobs POST] Unhandled:', err);
-    return NextResponse.json({ error: { message: 'Internal server error' } }, { status: 500 });
+    const msg = err instanceof Error ? err.message : 'Internal server error';
+    console.error('[jobs POST] Unhandled:', msg);
+    return NextResponse.json({ error: { message: msg } }, { status: 500 });
   }
 }

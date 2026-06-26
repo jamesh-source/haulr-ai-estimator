@@ -86,8 +86,9 @@ export async function GET(
 
     return NextResponse.json({ data: { ...quote, photos: photos ?? [] }, error: null });
   } catch (err) {
-    console.error('[quotes/[id] GET] Unhandled:', err);
-    return NextResponse.json({ error: { message: 'Internal server error' } }, { status: 500 });
+    const msg = err instanceof Error ? err.message : 'Internal server error';
+    console.error('[quotes/[id] GET] Unhandled:', msg);
+    return NextResponse.json({ error: { message: msg } }, { status: 500 });
   }
 }
 
@@ -154,8 +155,9 @@ export async function PUT(
 
     return NextResponse.json({ data: updated, error: null });
   } catch (err) {
-    console.error('[quotes/[id] PUT] Unhandled:', err);
-    return NextResponse.json({ error: { message: 'Internal server error' } }, { status: 500 });
+    const msg = err instanceof Error ? err.message : 'Internal server error';
+    console.error('[quotes/[id] PUT] Unhandled:', msg);
+    return NextResponse.json({ error: { message: msg } }, { status: 500 });
   }
 }
 
@@ -215,7 +217,8 @@ export async function DELETE(
 
     return NextResponse.json({ data: { deleted: true, id }, error: null });
   } catch (err) {
-    console.error('[quotes/[id] DELETE] Unhandled:', err);
-    return NextResponse.json({ error: { message: 'Internal server error' } }, { status: 500 });
+    const msg = err instanceof Error ? err.message : 'Internal server error';
+    console.error('[quotes/[id] DELETE] Unhandled:', msg);
+    return NextResponse.json({ error: { message: msg } }, { status: 500 });
   }
 }

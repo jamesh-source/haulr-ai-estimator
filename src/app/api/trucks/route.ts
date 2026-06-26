@@ -28,8 +28,9 @@ export async function GET() {
 
     return NextResponse.json({ data: data ?? [], error: null });
   } catch (err) {
-    console.error('[trucks GET] Unhandled:', err);
-    return NextResponse.json({ error: { message: 'Internal server error' } }, { status: 500 });
+    const msg = err instanceof Error ? err.message : 'Internal server error';
+    console.error('[trucks GET] Unhandled:', msg);
+    return NextResponse.json({ error: { message: msg } }, { status: 500 });
   }
 }
 
@@ -61,7 +62,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ data, error: null }, { status: 201 });
   } catch (err) {
-    console.error('[trucks POST] Unhandled:', err);
-    return NextResponse.json({ error: { message: 'Internal server error' } }, { status: 500 });
+    const msg = err instanceof Error ? err.message : 'Internal server error';
+    console.error('[trucks POST] Unhandled:', msg);
+    return NextResponse.json({ error: { message: msg } }, { status: 500 });
   }
 }

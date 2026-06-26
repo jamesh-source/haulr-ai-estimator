@@ -90,8 +90,9 @@ export async function GET(
       error: null,
     });
   } catch (err) {
-    console.error('[jobs/[id] GET] Unhandled:', err);
-    return NextResponse.json({ error: { message: 'Internal server error' } }, { status: 500 });
+    const msg = err instanceof Error ? err.message : 'Internal server error';
+    console.error('[jobs/[id] GET] Unhandled:', msg);
+    return NextResponse.json({ error: { message: msg } }, { status: 500 });
   }
 }
 
@@ -193,8 +194,9 @@ export async function PUT(
 
     return NextResponse.json({ data: updated, error: null });
   } catch (err) {
-    console.error('[jobs/[id] PUT] Unhandled:', err);
-    return NextResponse.json({ error: { message: 'Internal server error' } }, { status: 500 });
+    const msg = err instanceof Error ? err.message : 'Internal server error';
+    console.error('[jobs/[id] PUT] Unhandled:', msg);
+    return NextResponse.json({ error: { message: msg } }, { status: 500 });
   }
 }
 
@@ -259,7 +261,8 @@ export async function DELETE(
       error: null,
     });
   } catch (err) {
-    console.error('[jobs/[id] DELETE] Unhandled:', err);
-    return NextResponse.json({ error: { message: 'Internal server error' } }, { status: 500 });
+    const msg = err instanceof Error ? err.message : 'Internal server error';
+    console.error('[jobs/[id] DELETE] Unhandled:', msg);
+    return NextResponse.json({ error: { message: msg } }, { status: 500 });
   }
 }

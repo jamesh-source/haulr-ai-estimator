@@ -216,7 +216,8 @@ export async function POST(
       error: null,
     });
   } catch (err) {
-    console.error('[jobs/complete] Unhandled:', err);
-    return NextResponse.json({ error: { message: 'Internal server error' } }, { status: 500 });
+    const msg = err instanceof Error ? err.message : 'Internal server error';
+    console.error('[jobs/complete] Unhandled:', msg);
+    return NextResponse.json({ error: { message: msg } }, { status: 500 });
   }
 }

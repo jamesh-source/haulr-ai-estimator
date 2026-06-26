@@ -121,8 +121,9 @@ export async function GET(_request: NextRequest) {
     void _raw;
     return NextResponse.json({ data: { ...settingsRest, pricing, initialized: true }, error: null });
   } catch (err) {
-    console.error('[settings GET] Unhandled:', err);
-    return NextResponse.json({ error: { message: 'Internal server error' } }, { status: 500 });
+    const msg = err instanceof Error ? err.message : 'Internal server error';
+    console.error('[settings GET] Unhandled:', msg);
+    return NextResponse.json({ error: { message: msg } }, { status: 500 });
   }
 }
 
@@ -196,8 +197,9 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ data: updated, error: null });
   } catch (err) {
-    console.error('[settings PUT] Unhandled:', err);
-    return NextResponse.json({ error: { message: 'Internal server error' } }, { status: 500 });
+    const msg = err instanceof Error ? err.message : 'Internal server error';
+    console.error('[settings PUT] Unhandled:', msg);
+    return NextResponse.json({ error: { message: msg } }, { status: 500 });
   }
 }
 
@@ -270,7 +272,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data: settings, error: null }, { status: 201 });
   } catch (err) {
-    console.error('[settings POST] Unhandled:', err);
-    return NextResponse.json({ error: { message: 'Internal server error' } }, { status: 500 });
+    const msg = err instanceof Error ? err.message : 'Internal server error';
+    console.error('[settings POST] Unhandled:', msg);
+    return NextResponse.json({ error: { message: msg } }, { status: 500 });
   }
 }

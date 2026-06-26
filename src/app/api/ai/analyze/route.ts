@@ -243,10 +243,10 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Internal server error';
-    console.error('[ai/analyze] Unhandled error:', message);
+    const msg = err instanceof Error ? err.message : 'Internal server error';
+    console.error('[ai/analyze] Unhandled error:', msg);
     return NextResponse.json(
-      { error: { message: 'Internal server error', code: 'INTERNAL_ERROR' } },
+      { error: { message: msg, code: 'INTERNAL_ERROR' } },
       { status: 500 }
     );
   }

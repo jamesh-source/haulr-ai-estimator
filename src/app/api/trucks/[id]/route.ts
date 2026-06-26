@@ -42,8 +42,9 @@ export async function PUT(
 
     return NextResponse.json({ data, error: null });
   } catch (err) {
-    console.error('[trucks PUT] Unhandled:', err);
-    return NextResponse.json({ error: { message: 'Internal server error' } }, { status: 500 });
+    const msg = err instanceof Error ? err.message : 'Internal server error';
+    console.error('[trucks PUT] Unhandled:', msg);
+    return NextResponse.json({ error: { message: msg } }, { status: 500 });
   }
 }
 
@@ -73,7 +74,8 @@ export async function DELETE(
 
     return NextResponse.json({ data: { success: true }, error: null });
   } catch (err) {
-    console.error('[trucks DELETE] Unhandled:', err);
-    return NextResponse.json({ error: { message: 'Internal server error' } }, { status: 500 });
+    const msg = err instanceof Error ? err.message : 'Internal server error';
+    console.error('[trucks DELETE] Unhandled:', msg);
+    return NextResponse.json({ error: { message: msg } }, { status: 500 });
   }
 }

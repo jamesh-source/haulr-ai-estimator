@@ -265,7 +265,8 @@ export async function POST(
       error: null,
     });
   } catch (err) {
-    console.error('[quotes/send] Unhandled:', err);
-    return NextResponse.json({ error: { message: 'Internal server error' } }, { status: 500 });
+    const msg = err instanceof Error ? err.message : 'Internal server error';
+    console.error('[quotes/send] Unhandled:', msg);
+    return NextResponse.json({ error: { message: msg } }, { status: 500 });
   }
 }
