@@ -14,15 +14,15 @@ interface CrewMember {
   active: boolean;
 }
 
-// DB row uses snake_case columns
+// DB row matches crew_members table schema exactly
 interface CrewRow {
   id: string;
   name: string;
   role: string;
   phone: string;
   email: string;
-  rate_per_hour: number;
-  is_active: boolean;
+  hourly_rate: number;   // DB column name
+  status: string;        // DB column: 'active' | 'inactive'
   clerk_user_id?: string;
 }
 
@@ -33,8 +33,8 @@ function rowToMember(row: CrewRow): CrewMember {
     role: row.role as CrewMember['role'],
     phone: row.phone ?? '',
     email: row.email ?? '',
-    ratePerHour: row.rate_per_hour ?? 0,
-    active: row.is_active ?? true,
+    ratePerHour: row.hourly_rate ?? 0,
+    active: row.status === 'active',
   };
 }
 
@@ -44,8 +44,8 @@ function memberToPayload(m: Omit<CrewMember, 'id'>) {
     role: m.role,
     phone: m.phone,
     email: m.email,
-    rate_per_hour: m.ratePerHour,
-    is_active: m.active,
+    hourly_rate: m.ratePerHour,
+    status: m.active ? 'active' : 'inactive',
   };
 }
 
@@ -71,6 +71,104 @@ const EMPTY_MEMBER: Omit<CrewMember, 'id'> = {
   ratePerHour: 22,
   active: true,
 };
+
+// MemberForm must live OUTSIDE CrewManager so React doesn't remount it on every keystroke
+function MemberForm({ form, onChange, onSave, onCancel }: {
+  form: Omit<CrewMember, 'id'>;
+  onChange: (f: Omit<CrewMember, 'id'>) => void;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="bg-gray-800/70 border border-orange-500/30 rounded-xl p-4 space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-gray-500 text-xs block mb-1.5">Full Name *</label>
+          <input
+            type="text"
+            value={form.name}
+            onChange={(e) => onChange({ ...form, name: e.target.value })}
+            placeholder="John Smith"
+            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-200 text-sm focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/30"
+          />
+        </div>
+        <div>
+          <label className="text-gray-500 text-xs block mb-1.5">Role</label>
+          <select
+            value={form.role}
+            onChange={(e) => onChange({ ...form, role: e.target.value as CrewMember['role'] })}
+            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-200 text-sm focus:outline-none focus:border-orange-500"
+          >
+            {Object.entries(ROLE_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="text-gray-500 text-xs block mb-1.5">Phone</label>
+          <input
+            type="tel"
+            value={form.phone}
+            onChange={(e) => onChange({ ...form, phone: e.target.value })}
+            placeholder="(555) 000-0000"
+            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-200 text-sm focus:outline-none focus:border-orange-500"
+          />
+        </div>
+        <div>
+          <label className="text-gray-500 text-xs block mb-1.5">Email</label>
+          <input
+            type="email"
+            value={form.email}
+            onChange={(e) => onChange({ ...form, email: e.target.value })}
+            placeholder="john@company.com"
+            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-200 text-sm focus:outline-none focus:border-orange-500"
+          />
+        </div>
+        <div>
+          <label className="text-gray-500 text-xs block mb-1.5">Hourly Rate</label>
+          <div className="relative">
+            <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+            <input
+              type="number"
+              value={form.ratePerHour}
+              onChange={(e) => onChange({ ...form, ratePerHour: Number(e.target.value) })}
+              className="w-full bg-gray-900 border border-gray-700 rounded-lg pl-7 pr-8 py-2 text-gray-200 text-sm focus:outline-none focus:border-orange-500"
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">/hr</span>
+          </div>
+        </div>
+        <div className="flex items-end">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <div
+              onClick={() => onChange({ ...form, active: !form.active })}
+              className={`rounded-full transition-colors cursor-pointer relative ${form.active ? 'bg-orange-500' : 'bg-gray-700'}`}
+              style={{ width: 40, height: 22 }}
+            >
+              <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.active ? 'translate-x-5' : 'translate-x-0.5'}`} />
+            </div>
+            <span className="text-gray-400 text-sm">{form.active ? 'Active' : 'Inactive'}</span>
+          </label>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 pt-2 border-t border-gray-700">
+        <button
+          onClick={onSave}
+          className="flex items-center gap-1.5 bg-orange-600 hover:bg-orange-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+        >
+          <Save className="w-3.5 h-3.5" />
+          Save
+        </button>
+        <button
+          onClick={onCancel}
+          className="flex items-center gap-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm px-4 py-2 rounded-lg transition-colors"
+        >
+          <X className="w-3.5 h-3.5" />
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export function CrewManager() {
   const [crew, setCrew] = useState<CrewMember[]>([]);
@@ -168,96 +266,6 @@ export function CrewManager() {
       toast.error(err instanceof Error ? err.message : 'Failed to update crew member');
     }
   };
-
-  const MemberForm = ({ form, onChange, onSave, onCancel }: { form: Omit<CrewMember, 'id'>; onChange: (f: Omit<CrewMember, 'id'>) => void; onSave: () => void; onCancel: () => void }) => (
-    <div className="bg-gray-800/70 border border-orange-500/30 rounded-xl p-4 space-y-4">
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="text-gray-500 text-xs block mb-1.5">Full Name *</label>
-          <input
-            type="text"
-            value={form.name}
-            onChange={(e) => onChange({ ...form, name: e.target.value })}
-            placeholder="John Smith"
-            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-200 text-sm focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/30"
-          />
-        </div>
-        <div>
-          <label className="text-gray-500 text-xs block mb-1.5">Role</label>
-          <select
-            value={form.role}
-            onChange={(e) => onChange({ ...form, role: e.target.value as CrewMember['role'] })}
-            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-200 text-sm focus:outline-none focus:border-orange-500"
-          >
-            {Object.entries(ROLE_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="text-gray-500 text-xs block mb-1.5">Phone</label>
-          <input
-            type="tel"
-            value={form.phone}
-            onChange={(e) => onChange({ ...form, phone: e.target.value })}
-            placeholder="(555) 000-0000"
-            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-200 text-sm focus:outline-none focus:border-orange-500"
-          />
-        </div>
-        <div>
-          <label className="text-gray-500 text-xs block mb-1.5">Email</label>
-          <input
-            type="email"
-            value={form.email}
-            onChange={(e) => onChange({ ...form, email: e.target.value })}
-            placeholder="john@company.com"
-            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-gray-200 text-sm focus:outline-none focus:border-orange-500"
-          />
-        </div>
-        <div>
-          <label className="text-gray-500 text-xs block mb-1.5">Hourly Rate</label>
-          <div className="relative">
-            <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
-            <input
-              type="number"
-              value={form.ratePerHour}
-              onChange={(e) => onChange({ ...form, ratePerHour: Number(e.target.value) })}
-              className="w-full bg-gray-900 border border-gray-700 rounded-lg pl-7 pr-8 py-2 text-gray-200 text-sm focus:outline-none focus:border-orange-500"
-            />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">/hr</span>
-          </div>
-        </div>
-        <div className="flex items-end">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <div
-              onClick={() => onChange({ ...form, active: !form.active })}
-              className={`w-10 h-5.5 rounded-full transition-colors cursor-pointer relative ${form.active ? 'bg-orange-500' : 'bg-gray-700'}`}
-              style={{ height: '22px' }}
-            >
-              <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.active ? 'translate-x-5' : 'translate-x-0.5'}`} />
-            </div>
-            <span className="text-gray-400 text-sm">{form.active ? 'Active' : 'Inactive'}</span>
-          </label>
-        </div>
-      </div>
-      <div className="flex items-center gap-2 pt-2 border-t border-gray-700">
-        <button
-          onClick={onSave}
-          className="flex items-center gap-1.5 bg-orange-600 hover:bg-orange-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-        >
-          <Save className="w-3.5 h-3.5" />
-          Save
-        </button>
-        <button
-          onClick={onCancel}
-          className="flex items-center gap-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm px-4 py-2 rounded-lg transition-colors"
-        >
-          <X className="w-3.5 h-3.5" />
-          Cancel
-        </button>
-      </div>
-    </div>
-  );
 
   if (loading) {
     return (

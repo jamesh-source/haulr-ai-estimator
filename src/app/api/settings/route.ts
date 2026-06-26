@@ -1,11 +1,11 @@
-// =============================================================================
-// GET/PUT/POST /api/settings — Business settings
+﻿// =============================================================================
+// GET/PUT/POST /api/settings â€” Business settings
 // =============================================================================
 
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { DEFAULT_PRICING_CONFIG, APP_CONFIG } from '@/lib/constants';
 
 // -----------------------------------------------------------------------------
@@ -61,7 +61,7 @@ const UpdateSettingsSchema = z.object({
   website: z.string().url().optional().or(z.literal('')),
   logo_url: z.string().url().optional().or(z.literal('')),
   tax_rate: z.number().min(0).max(0.25).optional(),
-  base_price: z.number().nonnegative().optional(),
+  // 'pricing' is the frontend name; DB column is 'pricing_config'
   pricing: PricingConfigSchema.optional(),
 });
 
@@ -76,7 +76,7 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: { message: 'Unauthorized' } }, { status: 401 });
     }
 
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     const { data: settings, error } = await supabase
       .from('business_settings')
@@ -86,7 +86,7 @@ export async function GET(_request: NextRequest) {
 
     if (error) {
       if (error.code === 'PGRST116') {
-        // No settings yet — return defaults
+        // No settings yet â€” return defaults
         return NextResponse.json({
           data: {
             clerk_user_id: userId,
@@ -100,7 +100,6 @@ export async function GET(_request: NextRequest) {
             website: '',
             logo_url: '',
             tax_rate: APP_CONFIG.default_tax_rate,
-            base_price: 0,
             pricing: DEFAULT_PRICING_CONFIG,
             initialized: false,
           },
@@ -111,13 +110,16 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: { message: error.message } }, { status: 500 });
     }
 
-    // Merge pricing config with defaults for any missing keys
+    // pricing_config is the DB column; expose it as 'pricing' to the frontend
     const pricing = {
       ...DEFAULT_PRICING_CONFIG,
-      ...(settings.pricing as object ?? {}),
+      ...(settings.pricing_config as object ?? {}),
     };
 
-    return NextResponse.json({ data: { ...settings, pricing, initialized: true }, error: null });
+    // Exclude raw pricing_config from the response; use the merged 'pricing' key instead
+    const { pricing_config: _raw, ...settingsRest } = settings;
+    void _raw;
+    return NextResponse.json({ data: { ...settingsRest, pricing, initialized: true }, error: null });
   } catch (err) {
     console.error('[settings GET] Unhandled:', err);
     return NextResponse.json({ error: { message: 'Internal server error' } }, { status: 500 });
@@ -125,7 +127,7 @@ export async function GET(_request: NextRequest) {
 }
 
 // -----------------------------------------------------------------------------
-// PUT /api/settings — Update existing settings
+// PUT /api/settings â€” Update existing settings
 // -----------------------------------------------------------------------------
 
 export async function PUT(request: NextRequest) {
@@ -150,26 +152,31 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
-    // Load existing to merge pricing
+    // Load existing pricing_config to merge (DB column is pricing_config)
     const { data: existing } = await supabase
       .from('business_settings')
-      .select('pricing')
+      .select('pricing_config')
       .eq('clerk_user_id', userId)
       .single();
 
-    const mergedPricing = parsed.data.pricing
+    // Build the merged pricing_config value for the DB
+    const mergedPricingConfig = parsed.data.pricing
       ? {
           ...DEFAULT_PRICING_CONFIG,
-          ...(existing?.pricing as object ?? {}),
+          ...(existing?.pricing_config as object ?? {}),
           ...parsed.data.pricing,
         }
       : undefined;
 
+    // Strip 'pricing' (frontend name) from parsed data; write as 'pricing_config' (DB column)
+    const { pricing: _pricingField, ...restFields } = parsed.data;
+    void _pricingField;
+
     const updatePayload = {
-      ...parsed.data,
-      ...(mergedPricing ? { pricing: mergedPricing } : {}),
+      ...restFields,
+      ...(mergedPricingConfig ? { pricing_config: mergedPricingConfig } : {}),
       updated_at: new Date().toISOString(),
     };
 
@@ -195,7 +202,7 @@ export async function PUT(request: NextRequest) {
 }
 
 // -----------------------------------------------------------------------------
-// POST /api/settings — Initialize settings for new user
+// POST /api/settings â€” Initialize settings for new user
 // -----------------------------------------------------------------------------
 
 export async function POST(request: NextRequest) {
@@ -206,7 +213,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if settings already exist
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { data: existing } = await supabase
       .from('business_settings')
       .select('id')
@@ -225,7 +232,7 @@ export async function POST(request: NextRequest) {
       const text = await request.text();
       if (text) body = JSON.parse(text);
     } catch {
-      // OK — use empty body with defaults
+      // OK â€” use empty body with defaults
     }
 
     const parsed = BusinessSettingsSchema.partial().safeParse(body);

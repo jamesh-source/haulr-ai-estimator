@@ -1,11 +1,11 @@
-// =============================================================================
-// POST /api/route-optimization — Optimize job route for a given date
+﻿// =============================================================================
+// POST /api/route-optimization â€” Optimize job route for a given date
 // =============================================================================
 
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 const RouteOptimizationSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'date must be YYYY-MM-DD'),
@@ -51,7 +51,7 @@ interface OptimizedStop extends JobWithCoords {
 async function geocodeAddress(address: string): Promise<Coordinates | null> {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   if (!apiKey) {
-    console.warn('[route-optimization] GOOGLE_MAPS_API_KEY not configured — using null coords');
+    console.warn('[route-optimization] GOOGLE_MAPS_API_KEY not configured â€” using null coords');
     return null;
   }
 
@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { date, job_ids, start_location } = parsed.data;
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     // Load jobs for the date
     let query = supabase

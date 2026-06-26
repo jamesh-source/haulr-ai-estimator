@@ -244,107 +244,180 @@ export default function JobsPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Job #</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Customer</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Date</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Charged</th>
-                <th className="px-4 py-3" />
+      {/* Mobile card list (hidden on sm+) */}
+      <div className="sm:hidden space-y-2">
+        {filtered.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-12 text-center text-gray-400">
+            No jobs found. Try adjusting your filters.
+          </div>
+        ) : (
+          filtered.map((job) => {
+            const customerName =
+              ((job.customers?.first_name ?? '') +
+                ' ' +
+                (job.customers?.last_name ?? '')).trim() || 'Unknown';
+            return (
+              <div key={job.id} className="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-mono text-xs font-bold text-gray-700">
+                    {job.job_number ?? job.id}
+                  </span>
+                  <StatusBadge status={job.status} />
+                </div>
+                <p className="text-sm font-semibold text-gray-900">{customerName}</p>
+                {job.customers?.city && (
+                  <p className="text-xs text-gray-400 mb-1">{job.customers.city}</p>
+                )}
+                <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-50">
+                  <div>
+                    {job.scheduled_date ? (
+                      <p className="text-xs text-gray-500">
+                        {format(parseISO(job.scheduled_date), 'MMM d, yyyy')}
+                        {job.scheduled_time && ` · ${job.scheduled_time}`}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-gray-300 italic">Unscheduled</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {job.total_charged != null ? (
+                      <span className="font-bold text-gray-900 text-sm">
+                        ${job.total_charged.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    ) : (
+                      <span className="text-gray-300 text-xs">—</span>
+                    )}
+                    <div className="flex items-center gap-1">
+                      {job.status === 'scheduled' && (
+                        <button
+                          onClick={() => handleStatusChange(job.id, 'in_progress')}
+                          className="p-1.5 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors"
+                        >
+                          <Play className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                      {job.status === 'in_progress' && (
+                        <button
+                          onClick={() => handleStatusChange(job.id, 'completed')}
+                          className="p-1.5 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors"
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                      <Link
+                        href={`/jobs/${job.id}`}
+                        className="p-1.5 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 transition-colors"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Desktop table (hidden on mobile) */}
+      <div className="hidden sm:block bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-gray-100 bg-gray-50">
+              <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Job #</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Customer</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Date</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Charged</th>
+              <th className="px-4 py-3" />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-5 py-12 text-center text-gray-400">
+                  No jobs found. Try adjusting your filters.
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center text-gray-400">
-                    No jobs found. Try adjusting your filters.
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((job) => {
-                  const customerName =
-                    ((job.customers?.first_name ?? '') +
-                      ' ' +
-                      (job.customers?.last_name ?? '')).trim() || 'Unknown';
-                  return (
-                    <tr key={job.id} className="hover:bg-gray-50/50 transition-colors group">
-                      <td className="px-5 py-4">
-                        <p className="font-medium text-gray-900 font-mono text-xs">
-                          {job.job_number ?? job.id}
-                        </p>
-                      </td>
-                      <td className="px-4 py-4">
-                        <p className="font-medium text-gray-800">{customerName}</p>
-                        {job.customers?.city && (
-                          <p className="text-xs text-gray-400">{job.customers.city}</p>
-                        )}
-                      </td>
-                      <td className="px-4 py-4 text-gray-600">
-                        {job.scheduled_date ? (
-                          <div>
-                            <p>{format(parseISO(job.scheduled_date), 'MMM d, yyyy')}</p>
-                            {job.scheduled_time && (
-                              <p className="text-xs text-gray-400">{job.scheduled_time}</p>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-gray-300 text-xs italic">Unscheduled</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="flex items-center gap-2">
-                          <StatusBadge status={job.status} />
-                          {job.status === 'scheduled' && (
-                            <button
-                              onClick={() => handleStatusChange(job.id, 'in_progress')}
-                              className="opacity-0 group-hover:opacity-100 text-xs font-medium text-amber-600 hover:text-amber-700 transition-opacity"
-                            >
-                              <Play className="h-3.5 w-3.5" />
-                            </button>
-                          )}
-                          {job.status === 'in_progress' && (
-                            <button
-                              onClick={() => handleStatusChange(job.id, 'completed')}
-                              className="opacity-0 group-hover:opacity-100 text-xs font-medium text-green-600 hover:text-green-700 transition-opacity"
-                            >
-                              <CheckCircle2 className="h-3.5 w-3.5" />
-                            </button>
+            ) : (
+              filtered.map((job) => {
+                const customerName =
+                  ((job.customers?.first_name ?? '') +
+                    ' ' +
+                    (job.customers?.last_name ?? '')).trim() || 'Unknown';
+                return (
+                  <tr key={job.id} className="hover:bg-gray-50/50 transition-colors group">
+                    <td className="px-5 py-4">
+                      <p className="font-medium text-gray-900 font-mono text-xs">
+                        {job.job_number ?? job.id}
+                      </p>
+                    </td>
+                    <td className="px-4 py-4">
+                      <p className="font-medium text-gray-800">{customerName}</p>
+                      {job.customers?.city && (
+                        <p className="text-xs text-gray-400">{job.customers.city}</p>
+                      )}
+                    </td>
+                    <td className="px-4 py-4 text-gray-600">
+                      {job.scheduled_date ? (
+                        <div>
+                          <p>{format(parseISO(job.scheduled_date), 'MMM d, yyyy')}</p>
+                          {job.scheduled_time && (
+                            <p className="text-xs text-gray-400">{job.scheduled_time}</p>
                           )}
                         </div>
-                      </td>
-                      <td className="px-4 py-4 text-right">
-                        {job.total_charged != null ? (
-                          <span className="font-semibold text-gray-900">
-                            ${job.total_charged.toLocaleString('en-US', {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
-                          </span>
-                        ) : (
-                          <span className="text-gray-300 text-xs">—</span>
+                      ) : (
+                        <span className="text-gray-300 text-xs italic">Unscheduled</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <StatusBadge status={job.status} />
+                        {job.status === 'scheduled' && (
+                          <button
+                            onClick={() => handleStatusChange(job.id, 'in_progress')}
+                            className="opacity-0 group-hover:opacity-100 text-xs font-medium text-amber-600 hover:text-amber-700 transition-opacity"
+                          >
+                            <Play className="h-3.5 w-3.5" />
+                          </button>
                         )}
-                      </td>
-                      <td className="px-4 py-4">
-                        <Link
-                          href={`/jobs/${job.id}`}
-                          className="inline-flex items-center gap-1 text-xs font-medium text-orange-600 hover:text-orange-700 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Eye className="h-3.5 w-3.5" />
-                          View
-                        </Link>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                        {job.status === 'in_progress' && (
+                          <button
+                            onClick={() => handleStatusChange(job.id, 'completed')}
+                            className="opacity-0 group-hover:opacity-100 text-xs font-medium text-green-600 hover:text-green-700 transition-opacity"
+                          >
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 text-right">
+                      {job.total_charged != null ? (
+                        <span className="font-semibold text-gray-900">
+                          ${job.total_charged.toLocaleString('en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                      ) : (
+                        <span className="text-gray-300 text-xs">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-4">
+                      <Link
+                        href={`/jobs/${job.id}`}
+                        className="inline-flex items-center gap-1 text-xs font-medium text-orange-600 hover:text-orange-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                        View
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

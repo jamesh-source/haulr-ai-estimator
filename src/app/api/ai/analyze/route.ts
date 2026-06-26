@@ -1,11 +1,11 @@
-// =============================================================================
-// POST /api/ai/analyze — AI Photo Analysis Route
+﻿// =============================================================================
+// POST /api/ai/analyze â€” AI Photo Analysis Route
 // =============================================================================
 
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { analyzePhotos, buildEstimateFromAI, toAIEstimate } from '@/lib/ai/estimator';
 import { DEFAULT_PRICING_CONFIG } from '@/lib/constants';
 import type { PricingConfig } from '@/types';
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     // Rate limit check
     const rateLimit = await checkRateLimit(supabase, userId);
@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (saveError) {
-      // Log but don't fail — return results even if save fails
+      // Log but don't fail â€” return results even if save fails
       console.error('[ai/analyze] Failed to save analysis:', saveError.message);
     }
 

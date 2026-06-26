@@ -5,7 +5,7 @@
 
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export async function PUT(
   req: NextRequest,
@@ -26,9 +26,9 @@ export async function PUT(
       return NextResponse.json({ error: { message: 'Invalid JSON body' } }, { status: 400 });
     }
 
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { data, error } = await supabase
-      .from('crew')
+      .from('crew_members')
       .update(body as object)
       .eq('id', id)
       .eq('clerk_user_id', userId)
@@ -59,9 +59,9 @@ export async function DELETE(
 
     const { id } = await params;
 
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { error } = await supabase
-      .from('crew')
+      .from('crew_members')
       .delete()
       .eq('id', id)
       .eq('clerk_user_id', userId);

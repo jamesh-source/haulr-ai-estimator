@@ -1,10 +1,10 @@
-// =============================================================================
-// GET /api/analytics — Analytics data endpoint
+﻿// =============================================================================
+// GET /api/analytics â€” Analytics data endpoint
 // =============================================================================
 
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 // -----------------------------------------------------------------------------
 // Types
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: { message: 'Unauthorized' } }, { status: 401 });
     }
 
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { searchParams } = new URL(request.url);
 
     const startDate = parseDate(searchParams.get('start_date'), 30);
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
       ? new Date(new Date(endDate).getTime() - 365 * 86400000).toISOString()
       : startDate;
 
-    // ── Completed jobs in range ──
+    // â”€â”€ Completed jobs in range â”€â”€
     const { data: completedJobs } = await supabase
       .from('jobs')
       .select(`
@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
       .gte('updated_at', safeStart)
       .lte('updated_at', endDate);
 
-    // ── Job completion data (revenue actuals) ──
+    // â”€â”€ Job completion data (revenue actuals) â”€â”€
     const { data: completionData } = await supabase
       .from('job_completion_data')
       .select('job_id, actual_revenue, actual_dump_fee, actual_cubic_yards, recorded_at')
@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
       dumpByJobId.set(cd.job_id, Number(cd.actual_dump_fee ?? 0));
     }
 
-    // ── Build revenue by day ──
+    // â”€â”€ Build revenue by day â”€â”€
     const revByDay = new Map<string, { revenue: number; jobs: number }>();
     let totalRevenue = 0;
     let totalDumpCost = 0;
@@ -158,7 +158,7 @@ export async function GET(request: NextRequest) {
       cur.setDate(cur.getDate() + 1);
     }
 
-    // ── Jobs by status (all time for context, filtered for range) ──
+    // â”€â”€ Jobs by status (all time for context, filtered for range) â”€â”€
     const { data: statusCounts } = await supabase
       .from('jobs')
       .select('status')
@@ -175,13 +175,13 @@ export async function GET(request: NextRequest) {
       .map(([status, count]) => ({ status, count }))
       .sort((a, b) => b.count - a.count);
 
-    // ── Totals ──
+    // â”€â”€ Totals â”€â”€
     const totalCompletedJobs = completedJobs?.length ?? 0;
     const avgTicket = totalCompletedJobs > 0 ? totalRevenue / totalCompletedJobs : 0;
     const profitMargin = totalRevenue > 0 ? (totalRevenue - totalDumpCost) / totalRevenue : 0;
     const avgCubicYards = totalCompletedJobs > 0 ? totalCubicYards / totalCompletedJobs : 0;
 
-    // ── Quotes in range ──
+    // â”€â”€ Quotes in range â”€â”€
     const { count: totalQuotes } = await supabase
       .from('quotes')
       .select('*', { count: 'exact', head: true })
@@ -193,7 +193,7 @@ export async function GET(request: NextRequest) {
       ? totalCompletedJobs / (totalQuotes ?? 1)
       : 0;
 
-    // ── Lead sources ──
+    // â”€â”€ Lead sources â”€â”€
     const leadSourceMap = new Map<string, { count: number; revenue: number }>();
     for (const job of completedJobs ?? []) {
       const customer = job.customers as unknown as Record<string, string> | null;
@@ -206,7 +206,7 @@ export async function GET(request: NextRequest) {
       .map(([source, data]) => ({ source, ...data }))
       .sort((a, b) => b.revenue - a.revenue);
 
-    // ── AI analysis items (top detected) ──
+    // â”€â”€ AI analysis items (top detected) â”€â”€
     const { data: aiAnalyses } = await supabase
       .from('ai_analysis_results')
       .select('detected_items')

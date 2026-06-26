@@ -5,7 +5,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 const LineItemSchema = z.object({
   id: z.string(),
@@ -57,7 +57,7 @@ export async function GET(
     }
 
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     const { data: quote, error } = await supabase
       .from('quotes')
@@ -122,7 +122,7 @@ export async function PUT(
       );
     }
 
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     // Verify ownership
     const { data: existing } = await supabase
@@ -174,7 +174,7 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     const { data: existing } = await supabase
       .from('quotes')

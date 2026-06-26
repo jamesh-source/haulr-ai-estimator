@@ -261,7 +261,7 @@ export function ScheduleCalendar({
   );
 
   return (
-    <div className={cn('bg-white rounded-xl border border-gray-100 shadow-sm p-4 overflow-x-auto', className)}>
+    <div className={cn('bg-white rounded-xl border border-gray-100 shadow-sm p-4', className)}>
       <style>{`
         .rbc-calendar { font-family: inherit; }
         .rbc-header { padding: 6px 4px; font-size: 12px; font-weight: 600; color: #374151; border-bottom: 1px solid #F3F4F6; }

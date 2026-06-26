@@ -5,7 +5,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { APP_CONFIG } from '@/lib/constants';
 
 const UpdateJobSchema = z.object({
@@ -37,7 +37,7 @@ export async function GET(
     }
 
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     const { data: job, error } = await supabase
       .from('jobs')
@@ -126,7 +126,7 @@ export async function PUT(
       );
     }
 
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     const { data: existing } = await supabase
       .from('jobs')
@@ -213,7 +213,7 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     const { data: existing } = await supabase
       .from('jobs')

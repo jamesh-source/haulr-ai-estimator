@@ -4,7 +4,7 @@
 
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { PDFDocument, rgb, StandardFonts, PageSizes } from 'pdf-lib';
 
 // -----------------------------------------------------------------------------
@@ -338,7 +338,7 @@ export async function GET(
     }
 
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     const { data: quote, error: quoteError } = await supabase
       .from('quotes')

@@ -1,12 +1,12 @@
-// =============================================================================
-// GET /api/jobs — List jobs
-// POST /api/jobs — Create job
+﻿// =============================================================================
+// GET /api/jobs â€” List jobs
+// POST /api/jobs â€” Create job
 // =============================================================================
 
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { APP_CONFIG } from '@/lib/constants';
 
 const CreateJobSchema = z.object({
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: { message: 'Unauthorized' } }, { status: 401 });
     }
 
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { searchParams } = new URL(request.url);
 
     const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10));
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     // Verify customer ownership
     const { data: customer } = await supabase

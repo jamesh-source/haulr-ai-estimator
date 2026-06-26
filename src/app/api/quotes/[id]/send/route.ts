@@ -5,7 +5,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 const SendQuoteSchema = z.object({
   custom_message: z.string().max(2000).optional(),
@@ -164,7 +164,7 @@ export async function POST(
       );
     }
 
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     // Load quote with customer info
     const { data: quote, error: quoteError } = await supabase

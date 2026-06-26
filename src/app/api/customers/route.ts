@@ -1,12 +1,12 @@
-// =============================================================================
-// GET /api/customers — List customers
-// POST /api/customers — Create customer
+﻿// =============================================================================
+// GET /api/customers â€” List customers
+// POST /api/customers â€” Create customer
 // =============================================================================
 
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { APP_CONFIG } from '@/lib/constants';
 
 const CreateCustomerSchema = z.object({
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: { message: 'Unauthorized' } }, { status: 401 });
     }
 
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { searchParams } = new URL(request.url);
 
     const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10));
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     // Check for duplicate email within same user account
     const { data: existing } = await supabase

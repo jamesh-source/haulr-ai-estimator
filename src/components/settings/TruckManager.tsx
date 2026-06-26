@@ -16,7 +16,7 @@ interface TruckRecord {
   color: string;
 }
 
-// DB row uses snake_case columns
+// DB row matches trucks table schema exactly
 interface TruckRow {
   id: string;
   name: string;
@@ -24,9 +24,9 @@ interface TruckRow {
   model: string;
   year: number;
   license_plate: string;
-  capacity_cu_yd: number;
-  is_active: boolean;
-  color: string;
+  max_cubic_yards: number; // DB column name
+  status: string;           // DB column: 'active' | 'inactive' | 'maintenance'
+  color: string;            // Added via migration 003
   clerk_user_id?: string;
 }
 
@@ -38,8 +38,8 @@ function rowToTruck(row: TruckRow): TruckRecord {
     model: row.model ?? '',
     year: row.year ?? new Date().getFullYear(),
     licensePlate: row.license_plate ?? '',
-    capacityCuYd: row.capacity_cu_yd ?? 0,
-    active: row.is_active ?? true,
+    capacityCuYd: row.max_cubic_yards ?? 0,
+    active: row.status === 'active',
     color: row.color ?? '#f97316',
   };
 }
@@ -51,8 +51,8 @@ function truckToPayload(t: Omit<TruckRecord, 'id'>) {
     model: t.model,
     year: t.year,
     license_plate: t.licensePlate,
-    capacity_cu_yd: t.capacityCuYd,
-    is_active: t.active,
+    max_cubic_yards: t.capacityCuYd,
+    status: t.active ? 'active' : 'inactive',
     color: t.color,
   };
 }
@@ -70,94 +70,14 @@ const EMPTY_TRUCK: Omit<TruckRecord, 'id'> = {
   color: '#f97316',
 };
 
-export function TruckManager() {
-  const [trucks, setTrucks] = useState<TruckRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [addingNew, setAddingNew] = useState(false);
-  const [editForm, setEditForm] = useState<Omit<TruckRecord, 'id'>>(EMPTY_TRUCK);
-  const [newForm, setNewForm] = useState<Omit<TruckRecord, 'id'>>(EMPTY_TRUCK);
-
-  // Load trucks from API on mount
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await fetch('/api/trucks');
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error?.message ?? 'Failed to load trucks');
-        setTrucks((json.data as TruckRow[]).map(rowToTruck));
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Failed to load trucks');
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
-
-  const startEdit = (truck: TruckRecord) => {
-    setEditingId(truck.id);
-    const { id, ...rest } = truck;
-    void id;
-    setEditForm(rest);
-    setAddingNew(false);
-  };
-
-  const saveEdit = async () => {
-    if (!editForm.name.trim()) { toast.error('Truck name is required'); return; }
-    try {
-      const res = await fetch(`/api/trucks/${editingId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(truckToPayload(editForm)),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error?.message ?? 'Failed to update truck');
-      setTrucks(trucks.map((t) => (t.id === editingId ? rowToTruck(json.data as TruckRow) : t)));
-      setEditingId(null);
-      toast.success('Truck updated');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to update truck');
-    }
-  };
-
-  const saveNew = async () => {
-    if (!newForm.name.trim()) { toast.error('Truck name is required'); return; }
-    try {
-      const res = await fetch('/api/trucks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(truckToPayload(newForm)),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error?.message ?? 'Failed to add truck');
-      setTrucks([...trucks, rowToTruck(json.data as TruckRow)]);
-      setAddingNew(false);
-      setNewForm(EMPTY_TRUCK);
-      toast.success('Truck added');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to add truck');
-    }
-  };
-
-  const deleteTruck = async (id: string) => {
-    try {
-      const res = await fetch(`/api/trucks/${id}`, { method: 'DELETE' });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error?.message ?? 'Failed to remove truck');
-      setTrucks(trucks.filter((t) => t.id !== id));
-      toast.success('Truck removed');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to remove truck');
-    }
-  };
-
-  const TruckForm = ({ form, onChange, onSave, onCancel }: {
-    form: Omit<TruckRecord, 'id'>;
-    onChange: (f: Omit<TruckRecord, 'id'>) => void;
-    onSave: () => void;
-    onCancel: () => void;
-  }) => (
+// TruckForm must live OUTSIDE TruckManager so React doesn't remount it on every keystroke
+function TruckForm({ form, onChange, onSave, onCancel }: {
+  form: Omit<TruckRecord, 'id'>;
+  onChange: (f: Omit<TruckRecord, 'id'>) => void;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  return (
     <div className="bg-gray-800/70 border border-orange-500/30 rounded-xl p-4 space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -273,6 +193,89 @@ export function TruckManager() {
       </div>
     </div>
   );
+}
+
+export function TruckManager() {
+  const [trucks, setTrucks] = useState<TruckRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [addingNew, setAddingNew] = useState(false);
+  const [editForm, setEditForm] = useState<Omit<TruckRecord, 'id'>>(EMPTY_TRUCK);
+  const [newForm, setNewForm] = useState<Omit<TruckRecord, 'id'>>(EMPTY_TRUCK);
+
+  // Load trucks from API on mount
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch('/api/trucks');
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error?.message ?? 'Failed to load trucks');
+        setTrucks((json.data as TruckRow[]).map(rowToTruck));
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Failed to load trucks');
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  const startEdit = (truck: TruckRecord) => {
+    setEditingId(truck.id);
+    const { id, ...rest } = truck;
+    void id;
+    setEditForm(rest);
+    setAddingNew(false);
+  };
+
+  const saveEdit = async () => {
+    if (!editForm.name.trim()) { toast.error('Truck name is required'); return; }
+    try {
+      const res = await fetch(`/api/trucks/${editingId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(truckToPayload(editForm)),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error?.message ?? 'Failed to update truck');
+      setTrucks(trucks.map((t) => (t.id === editingId ? rowToTruck(json.data as TruckRow) : t)));
+      setEditingId(null);
+      toast.success('Truck updated');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update truck');
+    }
+  };
+
+  const saveNew = async () => {
+    if (!newForm.name.trim()) { toast.error('Truck name is required'); return; }
+    try {
+      const res = await fetch('/api/trucks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(truckToPayload(newForm)),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error?.message ?? 'Failed to add truck');
+      setTrucks([...trucks, rowToTruck(json.data as TruckRow)]);
+      setAddingNew(false);
+      setNewForm(EMPTY_TRUCK);
+      toast.success('Truck added');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to add truck');
+    }
+  };
+
+  const deleteTruck = async (id: string) => {
+    try {
+      const res = await fetch(`/api/trucks/${id}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error?.message ?? 'Failed to remove truck');
+      setTrucks(trucks.filter((t) => t.id !== id));
+      toast.success('Truck removed');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to remove truck');
+    }
+  };
 
   const totalCapacity = trucks.filter((t) => t.active).reduce((sum, t) => sum + t.capacityCuYd, 0);
 

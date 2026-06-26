@@ -377,103 +377,169 @@ export default function QuotesPage() {
         </div>
       </div>
 
-      {/* Data Table */}
-      <Card>
+      {/* Mobile card list (hidden on sm+) */}
+      {!loading && filteredQuotes.length > 0 && (
+        <div className="sm:hidden space-y-2">
+          {filteredQuotes.map((quote, i) => {
+            const customerName =
+              ((quote.customers?.first_name ?? '') +
+                ' ' +
+                (quote.customers?.last_name ?? '')).trim() || 'Unknown Customer';
+            return (
+              <motion.div
+                key={quote.id}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.03 }}
+                className="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <Link
+                    href={`/quotes/${quote.id}`}
+                    className="font-mono text-sm font-bold text-orange-600"
+                  >
+                    {quote.quote_number ?? quote.id}
+                  </Link>
+                  <Badge variant={quote.status} dot>
+                    {quote.status
+                      ? quote.status.charAt(0).toUpperCase() + quote.status.slice(1)
+                      : 'Unknown'}
+                  </Badge>
+                </div>
+                <p className="text-sm font-medium text-gray-900">{customerName}</p>
+                {quote.customers?.email && (
+                  <p className="text-xs text-gray-400 mb-2">{quote.customers.email}</p>
+                )}
+                <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-50">
+                  <span className="text-base font-bold text-gray-900">
+                    {formatCurrency(quote.total ?? 0)}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-400">
+                      {quote.created_at ? formatDate(new Date(quote.created_at)) : '—'}
+                    </span>
+                    <ActionsMenu
+                      quoteId={quote.id}
+                      onDelete={handleDelete}
+                      onSend={handleSend}
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Desktop table (hidden on mobile) */}
+      <Card className="hidden sm:block">
         {loading ? (
           <LoadingSkeleton />
         ) : filteredQuotes.length === 0 ? (
           <EmptyState filtered={statusFilter !== 'all' || !!searchQuery} />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-100">
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Quote #
-                  </th>
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Customer
-                  </th>
-                  <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Amount
-                  </th>
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Created
-                  </th>
-                  <th className="px-6 py-3" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {filteredQuotes.map((quote, i) => {
-                  const customerName =
-                    ((quote.customers?.first_name ?? '') +
-                      ' ' +
-                      (quote.customers?.last_name ?? '')).trim() ||
-                    'Unknown Customer';
-                  return (
-                    <motion.tr
-                      key={quote.id}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.04 }}
-                      className="hover:bg-gray-50 transition-colors group"
-                    >
-                      <td className="px-6 py-4">
-                        <Link
-                          href={`/quotes/${quote.id}`}
-                          className="font-mono text-sm font-semibold text-orange-600 hover:text-orange-700 hover:underline"
-                        >
-                          {quote.quote_number ?? quote.id}
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Quote #
+                </th>
+                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Customer
+                </th>
+                <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Amount
+                </th>
+                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Created
+                </th>
+                <th className="px-6 py-3" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {filteredQuotes.map((quote, i) => {
+                const customerName =
+                  ((quote.customers?.first_name ?? '') +
+                    ' ' +
+                    (quote.customers?.last_name ?? '')).trim() ||
+                  'Unknown Customer';
+                return (
+                  <motion.tr
+                    key={quote.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.04 }}
+                    className="hover:bg-gray-50 transition-colors group"
+                  >
+                    <td className="px-6 py-4">
+                      <Link
+                        href={`/quotes/${quote.id}`}
+                        className="font-mono text-sm font-semibold text-orange-600 hover:text-orange-700 hover:underline"
+                      >
+                        {quote.quote_number ?? quote.id}
+                      </Link>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="font-medium text-sm text-gray-900">{customerName}</div>
+                      {quote.customers?.email && (
+                        <div className="text-xs text-gray-500">{quote.customers.email}</div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <span className="text-sm font-bold text-gray-900">
+                        {formatCurrency(quote.total ?? 0)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <Badge variant={quote.status} dot>
+                        {quote.status
+                          ? quote.status.charAt(0).toUpperCase() + quote.status.slice(1)
+                          : 'Unknown'}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-600">
+                        {quote.created_at ? formatDate(new Date(quote.created_at)) : '—'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Link href={`/quotes/${quote.id}`}>
+                          <button className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+                            <ArrowUpRight className="h-4 w-4" />
+                          </button>
                         </Link>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="font-medium text-sm text-gray-900">{customerName}</div>
-                        {quote.customers?.email && (
-                          <div className="text-xs text-gray-500">{quote.customers.email}</div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <span className="text-sm font-bold text-gray-900">
-                          {formatCurrency(quote.total ?? 0)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <Badge variant={quote.status} dot>
-                          {quote.status
-                            ? quote.status.charAt(0).toUpperCase() + quote.status.slice(1)
-                            : 'Unknown'}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-600">
-                          {quote.created_at ? formatDate(new Date(quote.created_at)) : '—'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Link href={`/quotes/${quote.id}`}>
-                            <button className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
-                              <ArrowUpRight className="h-4 w-4" />
-                            </button>
-                          </Link>
-                          <ActionsMenu
-                            quoteId={quote.id}
-                            onDelete={handleDelete}
-                            onSend={handleSend}
-                          />
-                        </div>
-                      </td>
-                    </motion.tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                        <ActionsMenu
+                          quoteId={quote.id}
+                          onDelete={handleDelete}
+                          onSend={handleSend}
+                        />
+                      </div>
+                    </td>
+                  </motion.tr>
+                );
+              })}
+            </tbody>
+          </table>
         )}
       </Card>
+
+      {/* Mobile empty state */}
+      {!loading && filteredQuotes.length === 0 && (
+        <div className="sm:hidden">
+          <Card>
+            <EmptyState filtered={statusFilter !== 'all' || !!searchQuery} />
+          </Card>
+        </div>
+      )}
+      {loading && (
+        <div className="sm:hidden">
+          <Card><LoadingSkeleton /></Card>
+        </div>
+      )}
     </div>
   );
 }

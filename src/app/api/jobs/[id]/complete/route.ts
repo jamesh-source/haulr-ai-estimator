@@ -5,7 +5,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 const CompleteJobSchema = z.object({
   actual_hours: z.number().positive().max(24, 'Cannot exceed 24 hours'),
@@ -45,7 +45,7 @@ export async function POST(
       );
     }
 
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     // Load existing job
     const { data: job, error: jobError } = await supabase

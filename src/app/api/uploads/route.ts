@@ -1,10 +1,10 @@
-// =============================================================================
-// POST /api/uploads — Upload file to Supabase Storage
+﻿// =============================================================================
+// POST /api/uploads â€” Upload file to Supabase Storage
 // =============================================================================
 
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { v4 as uuidv4 } from 'uuid';
 import { APP_CONFIG } from '@/lib/constants';
 
@@ -81,10 +81,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Note for HEIC files — conversion is expected client-side
+    // Note for HEIC files â€” conversion is expected client-side
     if (mimeType === 'image/heic' || mimeType === 'image/heif') {
       // We accept HEIC but note that display may vary; conversion to JPEG happens client-side
-      console.info('[uploads] Received HEIC file — storing as-is. Client should convert for display.');
+      console.info('[uploads] Received HEIC file â€” storing as-is. Client should convert for display.');
     }
 
     // Extract optional metadata
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
     const publicUrl = urlData.publicUrl;
 
     // Save record to database
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { data: photoRecord, error: dbError } = await supabase
       .from('photo_uploads')
       .insert({
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
 
     if (dbError) {
       console.error('[uploads] DB record failed:', dbError.message);
-      // Don't fail — storage upload succeeded, just return what we have
+      // Don't fail â€” storage upload succeeded, just return what we have
     }
 
     return NextResponse.json(

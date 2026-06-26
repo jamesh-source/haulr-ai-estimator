@@ -1,11 +1,11 @@
-// =============================================================================
-// GET /api/crew  — List crew members
-// POST /api/crew — Create crew member
+﻿// =============================================================================
+// GET /api/crew  â€” List crew members
+// POST /api/crew â€” Create crew member
 // =============================================================================
 
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export async function GET() {
   try {
@@ -14,9 +14,9 @@ export async function GET() {
       return NextResponse.json({ error: { message: 'Unauthorized' } }, { status: 401 });
     }
 
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { data, error } = await supabase
-      .from('crew')
+      .from('crew_members')
       .select('*')
       .eq('clerk_user_id', userId)
       .order('name');
@@ -47,9 +47,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: { message: 'Invalid JSON body' } }, { status: 400 });
     }
 
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
     const { data, error } = await supabase
-      .from('crew')
+      .from('crew_members')
       .insert({ ...(body as object), clerk_user_id: userId })
       .select()
       .single();
