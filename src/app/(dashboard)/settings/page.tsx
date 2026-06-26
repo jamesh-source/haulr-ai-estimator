@@ -350,10 +350,13 @@ function HeavyItemsTab() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pricing: { heavy_item_prices, load_prices: {}, distance_brackets: [{ min_miles: 0, max_miles: 9999, charge: 0 }], labor_rate: 45, stair_fees: { per_flight: 25, max_flights: 5 }, difficulty_multipliers: { easy: 1.0, moderate: 1.15, hard: 1.3, extreme: 1.5 }, specialty_fees: {}, dump_base_fee: 26.5, dump_per_yard: 11 } }),
       });
-      if (!res.ok) throw new Error('Failed');
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error?.message ?? JSON.stringify(json));
       toast.success('Heavy items saved');
-    } catch {
-      toast.error('Failed to save. Please try again.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      console.error('[HeavyItemsTab save]', msg);
+      toast.error(`Save failed: ${msg}`);
     } finally {
       setSaving(false);
     }
@@ -540,10 +543,13 @@ function SpecialtyFeesTab() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pricing: { specialty_fees, load_prices: {}, distance_brackets: [{ min_miles: 0, max_miles: 9999, charge: 0 }], labor_rate: 45, stair_fees: { per_flight: 25, max_flights: 5 }, heavy_item_prices: {}, difficulty_multipliers: { easy: 1.0, moderate: 1.15, hard: 1.3, extreme: 1.5 }, dump_base_fee: 26.5, dump_per_yard: 11 } }),
       });
-      if (!res.ok) throw new Error('Failed');
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error?.message ?? JSON.stringify(json));
       toast.success('Specialty fees saved');
-    } catch {
-      toast.error('Failed to save. Please try again.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      console.error('[SpecialtyFeesTab save]', msg);
+      toast.error(`Save failed: ${msg}`);
     } finally {
       setSaving(false);
     }
@@ -743,9 +749,21 @@ interface NotifToggle {
 }
 
 function NotificationsTab() {
-  const [smsNumber, setSmsNumber] = useState('(555) 123-4567');
-  const [notifEmail, setNotifEmail] = useState('alerts@haulr.com');
+  const [smsNumber, setSmsNumber] = useState('');
+  const [notifEmail, setNotifEmail] = useState('');
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((r) => r.json())
+      .then(({ data }) => {
+        if (data) {
+          setSmsNumber(data.phone ?? '');
+          setNotifEmail(data.email ?? '');
+        }
+      })
+      .catch(() => {});
+  }, []);
   const [notifs, setNotifs] = useState<NotifToggle[]>([
     { id: '1', label: 'New Job Booked', description: 'Alert when a new job is created', enabled: true, channel: 'both' },
     { id: '2', label: 'Estimate Sent', description: 'When an estimate is emailed to a customer', enabled: true, channel: 'email' },
@@ -770,10 +788,13 @@ function NotificationsTab() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: smsNumber, email: notifEmail }),
       });
-      if (!res.ok) throw new Error('Failed');
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error?.message ?? JSON.stringify(json));
       toast.success('Notification settings saved');
-    } catch {
-      toast.error('Failed to save. Please try again.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      console.error('[NotificationsTab save]', msg);
+      toast.error(`Save failed: ${msg}`);
     } finally {
       setSaving(false);
     }
