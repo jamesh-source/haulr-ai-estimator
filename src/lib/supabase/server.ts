@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
 /**
@@ -33,30 +34,15 @@ export async function createClient() {
 
 /**
  * Creates a Supabase admin client that bypasses Row Level Security.
+ * Uses the service role key directly — no cookie/session management needed.
  * Only use in trusted server-side contexts (API routes, cron jobs).
  * NEVER expose the service role key to the browser.
  */
-export async function createAdminClient() {
-  const cookieStore = await cookies();
-
-  return createServerClient(
+export function createAdminClient() {
+  return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options as Parameters<typeof cookieStore.set>[2])
-            );
-          } catch {
-            // ignore in Server Components
-          }
-        },
-      },
       auth: {
         autoRefreshToken: false,
         persistSession: false,
