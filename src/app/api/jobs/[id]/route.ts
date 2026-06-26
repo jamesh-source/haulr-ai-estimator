@@ -6,7 +6,6 @@ import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createAdminClient } from '@/lib/supabase/server';
-import { APP_CONFIG } from '@/lib/constants';
 
 const UpdateJobSchema = z.object({
   title: z.string().min(1).max(300).optional(),
@@ -14,7 +13,7 @@ const UpdateJobSchema = z.object({
   status: z.enum(['draft', 'quoted', 'scheduled', 'in_progress', 'completed', 'cancelled']).optional(),
   scheduled_date: z.string().optional(),
   scheduled_time: z.string().optional(),
-  crew_ids: z.array(z.string().uuid()).max(APP_CONFIG.max_crew_per_job).optional(),
+  estimated_hours: z.number().min(0).max(24).optional().nullable(),
   truck_id: z.string().uuid().optional().nullable(),
   notes: z.string().max(2000).optional(),
   before_photos: z.array(z.string()).optional(),
@@ -37,7 +36,7 @@ export async function GET(
     }
 
     const { id } = await params;
-    const supabase = await createAdminClient();
+    const supabase = createAdminClient();
 
     const { data: job, error } = await supabase
       .from('jobs')
@@ -57,15 +56,20 @@ export async function GET(
       );
     }
 
-    // Load crew details if crew_ids present
-    let crew: unknown[] = [];
-    if (Array.isArray(job.crew_ids) && job.crew_ids.length > 0) {
-      const { data: crewData } = await supabase
-        .from('crew')
-        .select('id, name, email, phone, role')
-        .in('id', job.crew_ids);
-      crew = crewData ?? [];
-    }
+    // Load crew assigned via job_crew junction table
+    const { data: crewData } = await supabase
+      .from('job_crew')
+      .select(`
+        crew_member_id,
+        assigned_at,
+        crew_members (
+          id, name, role, phone, email,
+          hourly_rate, pay_type, pay_percent, status
+        )
+      `)
+      .eq('job_id', id)
+      .eq('clerk_user_id', userId);
+    const crew = (crewData ?? []).map((row: { crew_members: unknown }) => row.crew_members).filter(Boolean);
 
     // Load truck if assigned
     let truck: unknown = null;
@@ -127,7 +131,7 @@ export async function PUT(
       );
     }
 
-    const supabase = await createAdminClient();
+    const supabase = createAdminClient();
 
     const { data: existing } = await supabase
       .from('jobs')
@@ -215,7 +219,7 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    const supabase = await createAdminClient();
+    const supabase = createAdminClient();
 
     const { data: existing } = await supabase
       .from('jobs')
