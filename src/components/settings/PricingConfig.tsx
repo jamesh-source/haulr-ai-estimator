@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Trash2, DollarSign, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -57,6 +57,41 @@ export function PricingConfig() {
   const [pricing, setPricing] = useState<PricingData>(DEFAULT_PRICING);
   const [showPreview, setShowPreview] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((r) => r.json())
+      .then(({ data }) => {
+        if (!data?.pricing) return;
+        const p = data.pricing;
+        // Map API format back to component format
+        const loadSizes = [
+          { label: '1/8 Load', fraction: '1/8', pct: 13, minPrice: p.load_prices?.['1/8'] ?? 100, maxPrice: Math.round((p.load_prices?.['1/8'] ?? 100) * 1.5) },
+          { label: '1/4 Load', fraction: '1/4', pct: 25, minPrice: p.load_prices?.['1/4'] ?? 150, maxPrice: Math.round((p.load_prices?.['1/4'] ?? 150) * 1.5) },
+          { label: '3/8 Load', fraction: '3/8', pct: 38, minPrice: p.load_prices?.['3/8'] ?? 225, maxPrice: Math.round((p.load_prices?.['3/8'] ?? 225) * 1.33) },
+          { label: '1/2 Load', fraction: '1/2', pct: 50, minPrice: p.load_prices?.['1/2'] ?? 300, maxPrice: Math.round((p.load_prices?.['1/2'] ?? 300) * 1.33) },
+          { label: '5/8 Load', fraction: '5/8', pct: 63, minPrice: p.load_prices?.['5/8'] ?? 400, maxPrice: Math.round((p.load_prices?.['5/8'] ?? 400) * 1.25) },
+          { label: '3/4 Load', fraction: '3/4', pct: 75, minPrice: p.load_prices?.['3/4'] ?? 500, maxPrice: Math.round((p.load_prices?.['3/4'] ?? 500) * 1.25) },
+          { label: '7/8 Load', fraction: '7/8', pct: 88, minPrice: p.load_prices?.['7/8'] ?? 625, maxPrice: Math.round((p.load_prices?.['7/8'] ?? 625) * 1.2) },
+          { label: 'Full Load', fraction: '1', pct: 100, minPrice: p.load_prices?.['1'] ?? 700, maxPrice: Math.round((p.load_prices?.['1'] ?? 700) * 1.28) },
+        ];
+        setPricing({
+          loadSizes,
+          distanceBrackets: (p.distance_brackets ?? []).map((b: { min_miles: number; max_miles: number; charge: number }, i: number) => ({
+            id: String(i + 1),
+            minMiles: b.min_miles,
+            maxMiles: b.max_miles >= 9999 ? null : b.max_miles,
+            surcharge: b.charge,
+          })),
+          laborRatePerHour: p.labor_rate ?? 45,
+          stairFeePerFlight: p.stair_fees?.per_flight ?? 25,
+          dumpFeeBase: p.dump_base_fee ?? 26.5,
+          dumpFeePerYard: p.dump_per_yard ?? 11,
+          taxRate: (data.tax_rate ?? 0.0835) * 100,
+        });
+      })
+      .catch(() => {});
+  }, []);
 
   const updateLoadSize = (index: number, field: keyof LoadSizePrice, value: number) => {
     const updated = [...pricing.loadSizes];

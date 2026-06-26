@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
@@ -21,6 +21,13 @@ export default function NewQuotePage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewData, setPreviewData] = useState<QuotePreviewData | null>(null);
   const quoteNumber = generateQuoteNumber();
+  const [companyInfo, setCompanyInfo] = useState({ name: '', phone: '', email: '', address: '', city: '', state: '', zip: '' });
+
+  useEffect(() => {
+    fetch('/api/settings').then(r => r.json()).then(({ data }) => {
+      if (data) setCompanyInfo({ name: data.company_name ?? '', phone: data.phone ?? '', email: data.email ?? '', address: data.address ?? '', city: data.city ?? '', state: data.state ?? '', zip: data.zip ?? '' });
+    }).catch(() => {});
+  }, []);
 
   // Pre-fill from estimator query params
   const initialData = {
@@ -75,10 +82,10 @@ export default function NewQuotePage() {
       serviceAddress: data.serviceAddress,
       createdAt: new Date(),
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      companyName: 'HAULR Junk Removal',
-      companyPhone: '(602) 555-0123',
-      companyEmail: 'quotes@haulr.com',
-      companyAddress: '1234 Business Park Dr, Phoenix, AZ 85001',
+      companyName: companyInfo.name || 'HAULR Junk Removal',
+      companyPhone: companyInfo.phone || '(602) 555-0123',
+      companyEmail: companyInfo.email || 'quotes@haulr.com',
+      companyAddress: [companyInfo.address, companyInfo.city, companyInfo.state, companyInfo.zip].filter(Boolean).join(', ') || '1234 Business Park Dr, Phoenix, AZ 85001',
       lineItems,
       subtotal: totals.subtotal,
       discount: totals.discountAmount,

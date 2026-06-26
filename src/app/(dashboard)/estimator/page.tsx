@@ -652,7 +652,7 @@ export default function EstimatorPage() {
 
       {/* Photo summary strip (always visible after photos are added) */}
       {photos.length > 0 && step > 2 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 pointer-events-none">
+        <div className="fixed bottom-20 lg:bottom-6 left-1/2 -translate-x-1/2 z-40 pointer-events-none">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

@@ -183,7 +183,9 @@ export function ScheduleCalendar({
   onEventResize,
   className,
 }: ScheduleCalendarProps) {
-  const [view, setView] = useState<View>(Views.WEEK);
+  const [view, setView] = useState<View>(
+    typeof window !== 'undefined' && window.innerWidth < 768 ? Views.DAY : Views.WEEK
+  );
   const [date, setDate] = useState(new Date());
 
   // Map jobs → calendar events
@@ -259,7 +261,7 @@ export function ScheduleCalendar({
   );
 
   return (
-    <div className={cn('bg-white rounded-xl border border-gray-100 shadow-sm p-4', className)}>
+    <div className={cn('bg-white rounded-xl border border-gray-100 shadow-sm p-4 overflow-x-auto', className)}>
       <style>{`
         .rbc-calendar { font-family: inherit; }
         .rbc-header { padding: 6px 4px; font-size: 12px; font-weight: 600; color: #374151; border-bottom: 1px solid #F3F4F6; }
@@ -292,7 +294,7 @@ export function ScheduleCalendar({
         components={components}
         selectable
         resizable
-        style={{ height: 620 }}
+        style={{ height: typeof window !== 'undefined' && window.innerWidth < 768 ? 450 : 620 }}
         popup
         step={30}
         timeslots={2}

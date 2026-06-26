@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Save, X, User, Phone, Mail, DollarSign, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -12,6 +12,41 @@ interface CrewMember {
   email: string;
   ratePerHour: number;
   active: boolean;
+}
+
+// DB row uses snake_case columns
+interface CrewRow {
+  id: string;
+  name: string;
+  role: string;
+  phone: string;
+  email: string;
+  rate_per_hour: number;
+  is_active: boolean;
+  clerk_user_id?: string;
+}
+
+function rowToMember(row: CrewRow): CrewMember {
+  return {
+    id: row.id,
+    name: row.name,
+    role: row.role as CrewMember['role'],
+    phone: row.phone ?? '',
+    email: row.email ?? '',
+    ratePerHour: row.rate_per_hour ?? 0,
+    active: row.is_active ?? true,
+  };
+}
+
+function memberToPayload(m: Omit<CrewMember, 'id'>) {
+  return {
+    name: m.name,
+    role: m.role,
+    phone: m.phone,
+    email: m.email,
+    rate_per_hour: m.ratePerHour,
+    is_active: m.active,
+  };
 }
 
 const ROLE_LABELS: Record<CrewMember['role'], string> = {
@@ -28,12 +63,6 @@ const ROLE_COLORS: Record<CrewMember['role'], string> = {
   helper: 'bg-gray-500/20 text-gray-400',
 };
 
-const INITIAL_CREW: CrewMember[] = [
-  { id: '1', name: 'Mike Rodriguez', role: 'driver', phone: '(555) 234-5678', email: 'mike@haulr.com', ratePerHour: 28, active: true },
-  { id: '2', name: 'James Wilson', role: 'laborer', phone: '(555) 345-6789', email: 'james@haulr.com', ratePerHour: 22, active: true },
-  { id: '3', name: 'Carlos Diaz', role: 'supervisor', phone: '(555) 456-7890', email: 'carlos@haulr.com', ratePerHour: 35, active: true },
-];
-
 const EMPTY_MEMBER: Omit<CrewMember, 'id'> = {
   name: '',
   role: 'laborer',
@@ -44,11 +73,29 @@ const EMPTY_MEMBER: Omit<CrewMember, 'id'> = {
 };
 
 export function CrewManager() {
-  const [crew, setCrew] = useState<CrewMember[]>(INITIAL_CREW);
+  const [crew, setCrew] = useState<CrewMember[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [addingNew, setAddingNew] = useState(false);
   const [editForm, setEditForm] = useState<Omit<CrewMember, 'id'>>(EMPTY_MEMBER);
   const [newForm, setNewForm] = useState<Omit<CrewMember, 'id'>>(EMPTY_MEMBER);
+
+  // Load crew from API on mount
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch('/api/crew');
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error?.message ?? 'Failed to load crew');
+        setCrew((json.data as CrewRow[]).map(rowToMember));
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Failed to load crew');
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
 
   const startEdit = (member: CrewMember) => {
     setEditingId(member.id);
@@ -56,28 +103,70 @@ export function CrewManager() {
     setAddingNew(false);
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!editForm.name.trim()) { toast.error('Name is required'); return; }
-    setCrew(crew.map((m) => (m.id === editingId ? { ...m, ...editForm } : m)));
-    setEditingId(null);
-    toast.success('Crew member updated');
+    try {
+      const res = await fetch(`/api/crew/${editingId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(memberToPayload(editForm)),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error?.message ?? 'Failed to update crew member');
+      setCrew(crew.map((m) => (m.id === editingId ? rowToMember(json.data as CrewRow) : m)));
+      setEditingId(null);
+      toast.success('Crew member updated');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update crew member');
+    }
   };
 
-  const saveNew = () => {
+  const saveNew = async () => {
     if (!newForm.name.trim()) { toast.error('Name is required'); return; }
-    setCrew([...crew, { ...newForm, id: Date.now().toString() }]);
-    setAddingNew(false);
-    setNewForm(EMPTY_MEMBER);
-    toast.success('Crew member added');
+    try {
+      const res = await fetch('/api/crew', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(memberToPayload(newForm)),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error?.message ?? 'Failed to add crew member');
+      setCrew([...crew, rowToMember(json.data as CrewRow)]);
+      setAddingNew(false);
+      setNewForm(EMPTY_MEMBER);
+      toast.success('Crew member added');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to add crew member');
+    }
   };
 
-  const deleteMember = (id: string) => {
-    setCrew(crew.filter((m) => m.id !== id));
-    toast.success('Crew member removed');
+  const deleteMember = async (id: string) => {
+    try {
+      const res = await fetch(`/api/crew/${id}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error?.message ?? 'Failed to remove crew member');
+      setCrew(crew.filter((m) => m.id !== id));
+      toast.success('Crew member removed');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to remove crew member');
+    }
   };
 
-  const toggleActive = (id: string) => {
-    setCrew(crew.map((m) => (m.id === id ? { ...m, active: !m.active } : m)));
+  const toggleActive = async (id: string) => {
+    const member = crew.find((m) => m.id === id);
+    if (!member) return;
+    try {
+      const res = await fetch(`/api/crew/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: !member.active }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error?.message ?? 'Failed to update crew member');
+      setCrew(crew.map((m) => (m.id === id ? rowToMember(json.data as CrewRow) : m)));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update crew member');
+    }
   };
 
   const MemberForm = ({ form, onChange, onSave, onCancel }: { form: Omit<CrewMember, 'id'>; onChange: (f: Omit<CrewMember, 'id'>) => void; onSave: () => void; onCancel: () => void }) => (
@@ -169,6 +258,14 @@ export function CrewManager() {
       </div>
     </div>
   );
+
+  if (loading) {
+    return (
+      <div className="text-center py-12 text-gray-600">
+        <div className="text-sm">Loading crew...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">

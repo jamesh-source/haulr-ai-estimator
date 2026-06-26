@@ -172,7 +172,7 @@ export default function AnalyticsPage() {
 
         {/* Date Range Selector */}
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center bg-gray-900 border border-gray-800 rounded-xl p-1 gap-1">
+          <div className="flex flex-wrap items-center bg-gray-900 border border-gray-800 rounded-xl p-1 gap-1">
             {RANGE_BUTTONS.map((btn) => (
               <button
                 key={btn.value}

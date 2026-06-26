@@ -108,7 +108,7 @@ export function InvoiceView({ invoice, className }: InvoiceViewProps) {
       {/* ------------------------------------------------------------------ */}
       {/* Header                                                              */}
       {/* ------------------------------------------------------------------ */}
-      <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-8 py-8 text-white">
+      <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-4 sm:px-8 py-8 text-white">
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">INVOICE</h1>
@@ -149,7 +149,7 @@ export function InvoiceView({ invoice, className }: InvoiceViewProps) {
       {/* ------------------------------------------------------------------ */}
       {/* Bill To + Dates                                                     */}
       {/* ------------------------------------------------------------------ */}
-      <div className="px-8 py-6 grid grid-cols-2 gap-8 border-b border-gray-100">
+      <div className="px-4 sm:px-8 py-6 grid grid-cols-1 sm:grid-cols-2 gap-8 border-b border-gray-100">
         <div>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
             Bill To
@@ -199,7 +199,7 @@ export function InvoiceView({ invoice, className }: InvoiceViewProps) {
       {/* ------------------------------------------------------------------ */}
       {/* Line items                                                          */}
       {/* ------------------------------------------------------------------ */}
-      <div className="px-8 py-6">
+      <div className="px-4 sm:px-8 py-6">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-200">
@@ -262,7 +262,7 @@ export function InvoiceView({ invoice, className }: InvoiceViewProps) {
       {/* Notes                                                               */}
       {/* ------------------------------------------------------------------ */}
       {invoice.notes && (
-        <div className="px-8 pb-6">
+        <div className="px-4 sm:px-8 pb-6">
           <div className="rounded-xl bg-gray-50 border border-gray-200 p-4">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
               Notes
@@ -273,7 +273,7 @@ export function InvoiceView({ invoice, className }: InvoiceViewProps) {
       )}
 
       {/* Footer */}
-      <div className="px-8 py-4 bg-gray-50 border-t border-gray-100">
+      <div className="px-4 sm:px-8 py-4 bg-gray-50 border-t border-gray-100">
         <p className="text-center text-xs text-gray-400">
           Thank you for choosing HAULR — Arizona&apos;s Premier Junk Removal Service
         </p>

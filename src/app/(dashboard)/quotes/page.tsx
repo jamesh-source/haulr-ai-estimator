@@ -1,127 +1,33 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
-  Plus, Search, Filter, FileText, Send, CheckCircle,
+  Plus, Search, FileText, Send, CheckCircle,
   Clock, DollarSign, MoreHorizontal, Eye, Pencil,
-  Trash2, Copy, ArrowUpRight, ChevronDown, X,
+  Trash2, Copy, ArrowUpRight, X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { cn, formatCurrency, formatDate } from '@/lib/utils';
 
 // =============================================================================
-// MOCK DATA
+// STATUS FILTER TABS
 // =============================================================================
 
-type QuoteStatus = 'draft' | 'sent' | 'approved' | 'rejected' | 'expired';
-
-interface Quote {
-  id: string;
-  quoteNumber: string;
-  customerName: string;
-  customerEmail: string;
-  serviceAddress: string;
-  amount: number;
-  status: QuoteStatus;
-  createdAt: Date;
-  sentAt?: Date;
-  expiresAt?: Date;
-  loadSize: string;
-}
-
-const MOCK_QUOTES: Quote[] = [
-  {
-    id: '1',
-    quoteNumber: 'HLR-20260615-4821',
-    customerName: 'Michael Torres',
-    customerEmail: 'mtorres@email.com',
-    serviceAddress: '1234 Oak St, Phoenix, AZ 85001',
-    amount: 549,
-    status: 'approved',
-    createdAt: new Date('2026-06-15'),
-    sentAt: new Date('2026-06-15'),
-    loadSize: '1/2 Load',
-  },
-  {
-    id: '2',
-    quoteNumber: 'HLR-20260617-2934',
-    customerName: 'Sarah Johnson',
-    customerEmail: 'sjohnson@gmail.com',
-    serviceAddress: '5678 Maple Ave, Scottsdale, AZ 85251',
-    amount: 879,
-    status: 'sent',
-    createdAt: new Date('2026-06-17'),
-    sentAt: new Date('2026-06-17'),
-    expiresAt: new Date('2026-06-24'),
-    loadSize: 'Full Load',
-  },
-  {
-    id: '3',
-    quoteNumber: 'HLR-20260618-7751',
-    customerName: 'Robert Chen',
-    customerEmail: 'rchen@business.com',
-    serviceAddress: '9012 Pine Rd, Tempe, AZ 85281',
-    amount: 325,
-    status: 'draft',
-    createdAt: new Date('2026-06-18'),
-    loadSize: '1/4 Load',
-  },
-  {
-    id: '4',
-    quoteNumber: 'HLR-20260619-3318',
-    customerName: 'Amanda Williams',
-    customerEmail: 'awilliams@email.com',
-    serviceAddress: '3456 Elm Dr, Mesa, AZ 85201',
-    amount: 699,
-    status: 'draft',
-    createdAt: new Date('2026-06-19'),
-    loadSize: '3/4 Load',
-  },
-  {
-    id: '5',
-    quoteNumber: 'HLR-20260620-5582',
-    customerName: 'David Martinez',
-    customerEmail: 'dmartinez@email.com',
-    serviceAddress: '7890 Cedar Ln, Chandler, AZ 85224',
-    amount: 1249,
-    status: 'approved',
-    createdAt: new Date('2026-06-20'),
-    sentAt: new Date('2026-06-20'),
-    loadSize: 'Full Load',
-  },
-  {
-    id: '6',
-    quoteNumber: 'HLR-20260621-9943',
-    customerName: 'Lisa Thompson',
-    customerEmail: 'lthompson@email.com',
-    serviceAddress: '2345 Birch Blvd, Gilbert, AZ 85234',
-    amount: 449,
-    status: 'rejected',
-    createdAt: new Date('2026-06-21'),
-    sentAt: new Date('2026-06-21'),
-    loadSize: '3/8 Load',
-  },
-  {
-    id: '7',
-    quoteNumber: 'HLR-20260622-1127',
-    customerName: 'James Wilson',
-    customerEmail: 'jwilson@email.com',
-    serviceAddress: '6789 Walnut Way, Peoria, AZ 85345',
-    amount: 795,
-    status: 'sent',
-    createdAt: new Date('2026-06-22'),
-    sentAt: new Date('2026-06-22'),
-    expiresAt: new Date('2026-06-29'),
-    loadSize: 'Full Load',
-  },
-];
+const STATUS_TABS = [
+  { id: 'all', label: 'All' },
+  { id: 'draft', label: 'Draft' },
+  { id: 'sent', label: 'Sent' },
+  { id: 'approved', label: 'Approved' },
+  { id: 'rejected', label: 'Rejected' },
+  { id: 'expired', label: 'Expired' },
+] as const;
 
 // =============================================================================
-// STATS BAR
+// STAT CARD
 // =============================================================================
 
 interface StatCardProps {
@@ -153,23 +59,16 @@ function StatCard({ label, value, icon: Icon, color, bgColor, sub }: StatCardPro
 }
 
 // =============================================================================
-// STATUS FILTER TABS
-// =============================================================================
-
-const STATUS_TABS = [
-  { id: 'all', label: 'All' },
-  { id: 'draft', label: 'Draft' },
-  { id: 'sent', label: 'Sent' },
-  { id: 'approved', label: 'Approved' },
-  { id: 'rejected', label: 'Rejected' },
-  { id: 'expired', label: 'Expired' },
-] as const;
-
-// =============================================================================
 // ACTIONS DROPDOWN
 // =============================================================================
 
-function ActionsMenu({ quoteId }: { quoteId: string }) {
+interface ActionsMenuProps {
+  quoteId: string;
+  onDelete: (id: string) => void;
+  onSend: (id: string) => void;
+}
+
+function ActionsMenu({ quoteId, onDelete, onSend }: ActionsMenuProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -185,10 +84,7 @@ function ActionsMenu({ quoteId }: { quoteId: string }) {
       </button>
       {open && (
         <>
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setOpen(false)}
-          />
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-8 z-20 bg-white border border-gray-200 rounded-xl shadow-lg py-1 w-40 overflow-hidden">
             <Link
               href={`/quotes/${quoteId}`}
@@ -215,7 +111,7 @@ function ActionsMenu({ quoteId }: { quoteId: string }) {
             </button>
             <button
               className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-              onClick={() => setOpen(false)}
+              onClick={() => { setOpen(false); onSend(quoteId); }}
             >
               <Send className="h-3.5 w-3.5 text-gray-400" />
               Send
@@ -223,7 +119,7 @@ function ActionsMenu({ quoteId }: { quoteId: string }) {
             <div className="border-t border-gray-100 my-1" />
             <button
               className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-              onClick={() => setOpen(false)}
+              onClick={() => { setOpen(false); onDelete(quoteId); }}
             >
               <Trash2 className="h-3.5 w-3.5" />
               Delete
@@ -250,7 +146,7 @@ function EmptyState({ filtered }: { filtered: boolean }) {
       </h3>
       <p className="text-sm text-gray-500 max-w-xs mb-6">
         {filtered
-          ? 'Try adjusting your search or filter criteria to find what you\'re looking for.'
+          ? "Try adjusting your search or filter criteria to find what you're looking for."
           : 'Create your first professional quote and start winning more jobs.'}
       </p>
       {!filtered && (
@@ -263,55 +159,105 @@ function EmptyState({ filtered }: { filtered: boolean }) {
 }
 
 // =============================================================================
+// LOADING SKELETON
+// =============================================================================
+
+function LoadingSkeleton() {
+  return (
+    <div className="animate-pulse">
+      {[...Array(5)].map((_, i) => (
+        <div key={i} className="flex items-center gap-4 px-6 py-4 border-b border-gray-50">
+          <div className="h-4 bg-gray-200 rounded w-36" />
+          <div className="h-4 bg-gray-200 rounded w-32" />
+          <div className="h-4 bg-gray-200 rounded flex-1" />
+          <div className="h-4 bg-gray-200 rounded w-20" />
+          <div className="h-5 bg-gray-200 rounded-full w-16" />
+          <div className="h-4 bg-gray-200 rounded w-24" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// =============================================================================
 // PAGE
 // =============================================================================
 
 export default function QuotesPage() {
+  const [quotes, setQuotes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [dateFilter, setDateFilter] = useState('');
+
+  useEffect(() => {
+    fetch('/api/quotes')
+      .then((r) => r.json())
+      .then(({ data }) => { setQuotes(data ?? []); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleDelete = async (id: string) => {
+    try {
+      await fetch(`/api/quotes/${id}`, { method: 'DELETE' });
+      setQuotes((prev) => prev.filter((q) => q.id !== id));
+    } catch {
+      // silent fail — could add toast here
+    }
+  };
+
+  const handleSend = async (id: string) => {
+    try {
+      await fetch(`/api/quotes/${id}/send`, { method: 'POST' });
+      setQuotes((prev) => prev.map((q) => q.id === id ? { ...q, status: 'sent' } : q));
+    } catch {
+      // silent fail
+    }
+  };
 
   // Derived stats
   const stats = useMemo(() => {
-    const total = MOCK_QUOTES.length;
-    const drafts = MOCK_QUOTES.filter((q) => q.status === 'draft').length;
-    const sent = MOCK_QUOTES.filter((q) => q.status === 'sent').length;
-    const approved = MOCK_QUOTES.filter((q) => q.status === 'approved').length;
+    const total = quotes.length;
+    const drafts = quotes.filter((q) => q.status === 'draft').length;
+    const sent = quotes.filter((q) => q.status === 'sent').length;
+    const approved = quotes.filter((q) => q.status === 'approved').length;
 
-    // This month revenue (approved quotes)
     const now = new Date();
-    const thisMonthRevenue = MOCK_QUOTES.filter((q) => {
-      const d = q.createdAt;
-      return (
-        q.status === 'approved' &&
-        d.getMonth() === now.getMonth() &&
-        d.getFullYear() === now.getFullYear()
-      );
-    }).reduce((sum, q) => sum + q.amount, 0);
+    const thisMonthRevenue = quotes
+      .filter((q) => {
+        const d = new Date(q.created_at);
+        return (
+          q.status === 'approved' &&
+          d.getMonth() === now.getMonth() &&
+          d.getFullYear() === now.getFullYear()
+        );
+      })
+      .reduce((sum, q) => sum + (q.total ?? 0), 0);
 
     return { total, drafts, sent, approved, thisMonthRevenue };
-  }, []);
-
-  // Filtered quotes
-  const filteredQuotes = useMemo(() => {
-    return MOCK_QUOTES.filter((q) => {
-      const matchesStatus = statusFilter === 'all' || q.status === statusFilter;
-      const matchesSearch =
-        !searchQuery ||
-        q.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        q.quoteNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        q.serviceAddress.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesStatus && matchesSearch;
-    });
-  }, [statusFilter, searchQuery]);
+  }, [quotes]);
 
   const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: MOCK_QUOTES.length };
-    for (const q of MOCK_QUOTES) {
+    const counts: Record<string, number> = { all: quotes.length };
+    for (const q of quotes) {
       counts[q.status] = (counts[q.status] ?? 0) + 1;
     }
     return counts;
-  }, []);
+  }, [quotes]);
+
+  const filteredQuotes = useMemo(() => {
+    return quotes.filter((q) => {
+      const matchesStatus = statusFilter === 'all' || q.status === statusFilter;
+      const customerName =
+        ((q.customers?.first_name ?? '') + ' ' + (q.customers?.last_name ?? '')).trim();
+      const matchesSearch =
+        !searchQuery ||
+        customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (q.quote_number ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (q.customers?.email ?? '').toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesStatus && matchesSearch;
+    });
+  }, [quotes, statusFilter, searchQuery]);
 
   return (
     <div className="space-y-6">
@@ -373,16 +319,15 @@ export default function QuotesPage() {
         />
       </div>
 
-      {/* Filters */}
+      {/* Search */}
       <Card>
         <CardContent className="pt-4 pb-4">
           <div className="flex items-center gap-3">
-            {/* Search */}
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search quotes, customers, addresses..."
+                placeholder="Search quotes, customers..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-9 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
@@ -396,21 +341,6 @@ export default function QuotesPage() {
                 </button>
               )}
             </div>
-
-            {/* Date filter */}
-            <div className="relative">
-              <input
-                type="date"
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-600"
-              />
-            </div>
-
-            {/* Filter button */}
-            <Button variant="outline" size="md" leftIcon={<Filter className="h-4 w-4" />}>
-              Filter
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -433,7 +363,9 @@ export default function QuotesPage() {
               <span
                 className={cn(
                   'text-xs px-1.5 py-0.5 rounded-full font-medium',
-                  statusFilter === tab.id ? 'bg-orange-100 text-orange-700' : 'bg-gray-200 text-gray-500'
+                  statusFilter === tab.id
+                    ? 'bg-orange-100 text-orange-700'
+                    : 'bg-gray-200 text-gray-500'
                 )}
               >
                 {statusCounts[tab.id]}
@@ -445,7 +377,9 @@ export default function QuotesPage() {
 
       {/* Data Table */}
       <Card>
-        {filteredQuotes.length === 0 ? (
+        {loading ? (
+          <LoadingSkeleton />
+        ) : filteredQuotes.length === 0 ? (
           <EmptyState filtered={statusFilter !== 'all' || !!searchQuery} />
         ) : (
           <div className="overflow-x-auto">
@@ -457,9 +391,6 @@ export default function QuotesPage() {
                   </th>
                   <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     Customer
-                  </th>
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Load / Address
                   </th>
                   <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     Amount
@@ -474,66 +405,68 @@ export default function QuotesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {filteredQuotes.map((quote, i) => (
-                  <motion.tr
-                    key={quote.id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.04 }}
-                    className="hover:bg-gray-50 transition-colors group"
-                  >
-                    <td className="px-6 py-4">
-                      <Link
-                        href={`/quotes/${quote.id}`}
-                        className="font-mono text-sm font-semibold text-orange-600 hover:text-orange-700 hover:underline"
-                      >
-                        {quote.quoteNumber}
-                      </Link>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-sm text-gray-900">
-                        {quote.customerName}
-                      </div>
-                      <div className="text-xs text-gray-500">{quote.customerEmail}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-700">{quote.loadSize}</div>
-                      <div className="text-xs text-gray-400 truncate max-w-[200px]">
-                        {quote.serviceAddress}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <span className="text-sm font-bold text-gray-900">
-                        {formatCurrency(quote.amount)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <Badge variant={quote.status} dot>
-                        {quote.status.charAt(0).toUpperCase() + quote.status.slice(1)}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-600">
-                        {formatDate(quote.createdAt)}
-                      </div>
-                      {quote.expiresAt && (
-                        <div className="text-xs text-yellow-600">
-                          Exp {formatDate(quote.expiresAt)}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Link href={`/quotes/${quote.id}`}>
-                          <button className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
-                            <ArrowUpRight className="h-4 w-4" />
-                          </button>
+                {filteredQuotes.map((quote, i) => {
+                  const customerName =
+                    ((quote.customers?.first_name ?? '') +
+                      ' ' +
+                      (quote.customers?.last_name ?? '')).trim() ||
+                    'Unknown Customer';
+                  return (
+                    <motion.tr
+                      key={quote.id}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.04 }}
+                      className="hover:bg-gray-50 transition-colors group"
+                    >
+                      <td className="px-6 py-4">
+                        <Link
+                          href={`/quotes/${quote.id}`}
+                          className="font-mono text-sm font-semibold text-orange-600 hover:text-orange-700 hover:underline"
+                        >
+                          {quote.quote_number ?? quote.id}
                         </Link>
-                        <ActionsMenu quoteId={quote.id} />
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-sm text-gray-900">{customerName}</div>
+                        {quote.customers?.email && (
+                          <div className="text-xs text-gray-500">{quote.customers.email}</div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <span className="text-sm font-bold text-gray-900">
+                          {formatCurrency(quote.total ?? 0)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <Badge variant={quote.status} dot>
+                          {quote.status
+                            ? quote.status.charAt(0).toUpperCase() + quote.status.slice(1)
+                            : 'Unknown'}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-600">
+                          {quote.created_at ? formatDate(new Date(quote.created_at)) : '—'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Link href={`/quotes/${quote.id}`}>
+                            <button className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+                              <ArrowUpRight className="h-4 w-4" />
+                            </button>
+                          </Link>
+                          <ActionsMenu
+                            quoteId={quote.id}
+                            onDelete={handleDelete}
+                            onSend={handleSend}
+                          />
+                        </div>
+                      </td>
+                    </motion.tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

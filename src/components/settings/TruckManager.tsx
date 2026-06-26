@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Save, X, Truck, Package, Hash } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -16,10 +16,46 @@ interface TruckRecord {
   color: string;
 }
 
-const INITIAL_TRUCKS: TruckRecord[] = [
-  { id: '1', name: 'Truck 1', make: 'Ford', model: 'F-650', year: 2020, licensePlate: 'HAULR-01', capacityCuYd: 12, active: true, color: '#f97316' },
-  { id: '2', name: 'Truck 2', make: 'RAM', model: '5500', year: 2019, licensePlate: 'HAULR-02', capacityCuYd: 10, active: true, color: '#3b82f6' },
-];
+// DB row uses snake_case columns
+interface TruckRow {
+  id: string;
+  name: string;
+  make: string;
+  model: string;
+  year: number;
+  license_plate: string;
+  capacity_cu_yd: number;
+  is_active: boolean;
+  color: string;
+  clerk_user_id?: string;
+}
+
+function rowToTruck(row: TruckRow): TruckRecord {
+  return {
+    id: row.id,
+    name: row.name,
+    make: row.make ?? '',
+    model: row.model ?? '',
+    year: row.year ?? new Date().getFullYear(),
+    licensePlate: row.license_plate ?? '',
+    capacityCuYd: row.capacity_cu_yd ?? 0,
+    active: row.is_active ?? true,
+    color: row.color ?? '#f97316',
+  };
+}
+
+function truckToPayload(t: Omit<TruckRecord, 'id'>) {
+  return {
+    name: t.name,
+    make: t.make,
+    model: t.model,
+    year: t.year,
+    license_plate: t.licensePlate,
+    capacity_cu_yd: t.capacityCuYd,
+    is_active: t.active,
+    color: t.color,
+  };
+}
 
 const TRUCK_COLORS = ['#f97316', '#3b82f6', '#10b981', '#8b5cf6', '#ec4899', '#f59e0b', '#06b6d4'];
 
@@ -35,37 +71,85 @@ const EMPTY_TRUCK: Omit<TruckRecord, 'id'> = {
 };
 
 export function TruckManager() {
-  const [trucks, setTrucks] = useState<TruckRecord[]>(INITIAL_TRUCKS);
+  const [trucks, setTrucks] = useState<TruckRecord[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [addingNew, setAddingNew] = useState(false);
   const [editForm, setEditForm] = useState<Omit<TruckRecord, 'id'>>(EMPTY_TRUCK);
   const [newForm, setNewForm] = useState<Omit<TruckRecord, 'id'>>(EMPTY_TRUCK);
 
+  // Load trucks from API on mount
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch('/api/trucks');
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error?.message ?? 'Failed to load trucks');
+        setTrucks((json.data as TruckRow[]).map(rowToTruck));
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Failed to load trucks');
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
   const startEdit = (truck: TruckRecord) => {
     setEditingId(truck.id);
     const { id, ...rest } = truck;
+    void id;
     setEditForm(rest);
     setAddingNew(false);
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!editForm.name.trim()) { toast.error('Truck name is required'); return; }
-    setTrucks(trucks.map((t) => (t.id === editingId ? { ...t, ...editForm } : t)));
-    setEditingId(null);
-    toast.success('Truck updated');
+    try {
+      const res = await fetch(`/api/trucks/${editingId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(truckToPayload(editForm)),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error?.message ?? 'Failed to update truck');
+      setTrucks(trucks.map((t) => (t.id === editingId ? rowToTruck(json.data as TruckRow) : t)));
+      setEditingId(null);
+      toast.success('Truck updated');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update truck');
+    }
   };
 
-  const saveNew = () => {
+  const saveNew = async () => {
     if (!newForm.name.trim()) { toast.error('Truck name is required'); return; }
-    setTrucks([...trucks, { ...newForm, id: Date.now().toString() }]);
-    setAddingNew(false);
-    setNewForm(EMPTY_TRUCK);
-    toast.success('Truck added');
+    try {
+      const res = await fetch('/api/trucks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(truckToPayload(newForm)),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error?.message ?? 'Failed to add truck');
+      setTrucks([...trucks, rowToTruck(json.data as TruckRow)]);
+      setAddingNew(false);
+      setNewForm(EMPTY_TRUCK);
+      toast.success('Truck added');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to add truck');
+    }
   };
 
-  const deleteTruck = (id: string) => {
-    setTrucks(trucks.filter((t) => t.id !== id));
-    toast.success('Truck removed');
+  const deleteTruck = async (id: string) => {
+    try {
+      const res = await fetch(`/api/trucks/${id}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error?.message ?? 'Failed to remove truck');
+      setTrucks(trucks.filter((t) => t.id !== id));
+      toast.success('Truck removed');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to remove truck');
+    }
   };
 
   const TruckForm = ({ form, onChange, onSave, onCancel }: {
@@ -191,6 +275,14 @@ export function TruckManager() {
   );
 
   const totalCapacity = trucks.filter((t) => t.active).reduce((sum, t) => sum + t.capacityCuYd, 0);
+
+  if (loading) {
+    return (
+      <div className="text-center py-12 text-gray-600">
+        <div className="text-sm">Loading trucks...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">

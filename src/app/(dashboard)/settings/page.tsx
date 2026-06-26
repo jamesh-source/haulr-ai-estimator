@@ -888,22 +888,24 @@ export default function SettingsPage() {
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Sidebar nav */}
         <div className="lg:w-52 flex-shrink-0">
-          <nav className="bg-gray-900 border border-gray-800 rounded-xl p-2 space-y-1 lg:sticky lg:top-4">
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-left transition-all ${
-                  activeTab === tab.id
-                    ? 'bg-orange-600 text-white shadow-sm'
-                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
-                }`}
-              >
-                {tab.icon}
-                {tab.label}
-              </button>
-            ))}
-          </nav>
+          <div className="overflow-x-auto -mx-4 px-4 lg:mx-0 lg:px-0">
+            <nav className="flex lg:flex-col gap-1 min-w-max lg:min-w-0 bg-gray-900 border border-gray-800 rounded-xl p-2 lg:sticky lg:top-4">
+              {TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex-shrink-0 flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-left transition-all ${
+                    activeTab === tab.id
+                      ? 'bg-orange-600 text-white shadow-sm'
+                      : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
+                  }`}
+                >
+                  {tab.icon}
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
+          </div>
         </div>
 
         {/* Content panel */}

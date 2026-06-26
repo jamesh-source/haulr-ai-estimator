@@ -246,6 +246,7 @@ export function CustomerKanban({ customers, onStatusChange }: CustomerKanbanProp
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
+      <p className="text-xs text-gray-500 mb-2 lg:hidden">Swipe left/right to see all stages</p>
       <div className="flex gap-4 overflow-x-auto pb-4" style={{ minHeight: '60vh' }}>
         {columnData.map((col) => (
           <KanbanColumn
