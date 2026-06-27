@@ -95,7 +95,7 @@ export default function JobsPage() {
   useEffect(() => {
     fetch('/api/jobs')
       .then((r) => r.json())
-      .then(({ data }) => { setJobs(data ?? []); })
+      .then(({ data }) => { setJobs(data?.jobs ?? []); })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
